@@ -1505,7 +1505,7 @@ func (p *prog) handleRecovery(reason RecoveryReason) {
 	}
 
 	// Apply our DNS settings back and log the interface state.
-	p.setDNS()
+	p.SetDNS()
 	p.logInterfacesState()
 
 	// allow watchdogs to put the listener back on the interface if its changed for any reason

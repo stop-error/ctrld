@@ -289,7 +289,7 @@ func (p *prog) postRun() {
 		p.resetDNS(false, false)
 		ns := ctrld.InitializeOsResolver(false)
 		mainLog.Load().Debug().Msgf("initialized OS resolver with nameservers: %v", ns)
-		p.setDNS()
+		p.SetDNS()
 		p.csSetDnsDone <- struct{}{}
 		close(p.csSetDnsDone)
 		p.logInterfacesState()
@@ -709,7 +709,7 @@ func (p *prog) deAllocateIP() error {
 	return nil
 }
 
-func (p *prog) setDNS() {
+func (p *prog) SetDNS() {
 	setDnsOK := false
 	defer func() {
 		p.csSetDnsOk = setDnsOK
