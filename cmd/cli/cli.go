@@ -207,7 +207,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 		mainLog.Load().Fatal().Msg("stopCh is nil")
 	}
 	waitCh := make(chan struct{})
-	p := &prog{
+	p := &Prog{
 		waitCh:           waitCh,
 		stopCh:           stopCh,
 		pinCodeValidCh:   make(chan struct{}, 1),
@@ -1062,7 +1062,7 @@ func readConfigWithNotice(writeDefaultConfig, notice bool) {
 	}
 }
 
-func uninstall(p *prog, s service.Service) {
+func uninstall(p *Prog, s service.Service) {
 	if _, err := s.Status(); err != nil && errors.Is(err, service.ErrNotInstalled) {
 		mainLog.Load().Error().Msg(err.Error())
 		return
@@ -1781,7 +1781,7 @@ func runInCdMode() bool {
 
 // curCdUID returns the current ControlD UID used by running ctrld process.
 func curCdUID() string {
-	if s, _ := newService(&prog{}, svcConfig); s != nil {
+	if s, _ := newService(&Prog{}, svcConfig); s != nil {
 		// Configure Windows service failure actions
 		if err := ConfigureWindowsServiceFailureActions(ctrldServiceName); err != nil {
 			mainLog.Load().Debug().Err(err).Msgf("failed to configure Windows service %s failure actions", ctrldServiceName)
@@ -1913,7 +1913,7 @@ func doValidateCdRemoteConfig(cdUID string, fatal bool) error {
 }
 
 // uninstallInvalidCdUID performs self-uninstallation because the ControlD device does not exist.
-func uninstallInvalidCdUID(p *prog, logger zerolog.Logger, doStop bool) bool {
+func uninstallInvalidCdUID(p *Prog, logger zerolog.Logger, doStop bool) bool {
 	s, err := newService(p, svcConfig)
 	if err != nil {
 		logger.Warn().Err(err).Msg("failed to create new service")

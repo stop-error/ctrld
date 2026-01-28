@@ -94,7 +94,7 @@ func (lw *logWriter) Write(p []byte) (int, error) {
 }
 
 // initLogging initializes global logging setup.
-func (p *prog) initLogging(backup bool) {
+func (p *Prog) initLogging(backup bool) {
 	zerolog.TimeFieldFormat = time.RFC3339 + ".000"
 	logWriters := initLoggingWithBackup(backup)
 
@@ -103,7 +103,7 @@ func (p *prog) initLogging(backup bool) {
 }
 
 // initInternalLogging performs internal logging if there's no log enabled.
-func (p *prog) initInternalLogging(writers []io.Writer) {
+func (p *Prog) initInternalLogging(writers []io.Writer) {
 	if !p.needInternalLogging() {
 		return
 	}
@@ -141,8 +141,8 @@ func (p *prog) initInternalLogging(writers []io.Writer) {
 	ctrld.ProxyLogger.Store(&l)
 }
 
-// needInternalLogging reports whether prog needs to run internal logging.
-func (p *prog) needInternalLogging() bool {
+// needInternalLogging reports whether Prog needs to run internal logging.
+func (p *Prog) needInternalLogging() bool {
 	// Do not run in non-cd mode.
 	if cdUID == "" {
 		return false
@@ -154,7 +154,7 @@ func (p *prog) needInternalLogging() bool {
 	return true
 }
 
-func (p *prog) logReader() (*logReader, error) {
+func (p *Prog) logReader() (*logReader, error) {
 	if p.needInternalLogging() {
 		p.mu.Lock()
 		lw := p.internalLogWriter

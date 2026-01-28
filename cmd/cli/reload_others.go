@@ -12,6 +12,6 @@ func notifyReloadSigCh(ch chan os.Signal) {
 	signal.Notify(ch, syscall.SIGUSR1)
 }
 
-func (p *prog) sendReloadSignal() error {
+func (p *Prog) sendReloadSignal() error {
 	return syscall.Kill(syscall.Getpid(), syscall.SIGUSR1)
 }

@@ -91,7 +91,7 @@ var svcConfig = &service.Config{
 
 var useSystemdResolved = false
 
-type prog struct {
+type Prog struct {
 	mu                   sync.Mutex
 	waitCh               chan struct{}
 	stopCh               chan struct{}
@@ -151,13 +151,13 @@ type prog struct {
 	onStopped     []func()
 }
 
-func (p *prog) Start(s service.Service) error {
+func (p *Prog) Start(s service.Service) error {
 	go p.runWait()
 	return nil
 }
 
 // runWait runs ctrld components, waiting for signal to reload.
-func (p *prog) runWait() {
+func (p *Prog) runWait() {
 	p.mu.Lock()
 	p.cfg = &cfg
 	p.mu.Unlock()
@@ -271,7 +271,7 @@ func (p *prog) runWait() {
 	}
 }
 
-func (p *prog) preRun() {
+func (p *Prog) preRun() {
 	if iface == "auto" {
 		iface = defaultIfaceName()
 		p.requiredMultiNICsConfig = requiredMultiNICsConfig()
@@ -279,7 +279,7 @@ func (p *prog) preRun() {
 	p.runningIface = iface
 }
 
-func (p *prog) postRun() {
+func (p *Prog) postRun() {
 	if !service.Interactive() {
 		if runtime.GOOS == "windows" {
 			isDC, roleInt := isRunningOnDomainController()
@@ -297,7 +297,7 @@ func (p *prog) postRun() {
 }
 
 // apiConfigReload calls API to check for latest config update then reload ctrld if necessary.
-func (p *prog) apiConfigReload() {
+func (p *Prog) apiConfigReload() {
 	if cdUID == "" {
 		return
 	}
@@ -401,7 +401,7 @@ func (p *prog) apiConfigReload() {
 	}
 }
 
-func (p *prog) setupUpstream(cfg *ctrld.Config) {
+func (p *Prog) setupUpstream(cfg *ctrld.Config) {
 	localUpstreams := make([]string, 0, len(cfg.Upstream))
 	ptrNameservers := make([]string, 0, len(cfg.Upstream))
 	isControlDUpstream := false
@@ -445,7 +445,7 @@ func (p *prog) setupUpstream(cfg *ctrld.Config) {
 //
 // The reloadCh is used to signal ctrld listeners that ctrld is going to be reloaded,
 // so all listeners could be terminated and re-spawned again.
-func (p *prog) run(reload bool, reloadCh chan struct{}) {
+func (p *Prog) run(reload bool, reloadCh chan struct{}) {
 	// Wait the caller to signal that we can do our logic.
 	<-p.waitCh
 	if !reload {
@@ -610,7 +610,7 @@ func (p *prog) run(reload bool, reloadCh chan struct{}) {
 }
 
 // setupClientInfoDiscover performs necessary works for running client info discover.
-func (p *prog) setupClientInfoDiscover(selfIP string) {
+func (p *Prog) setupClientInfoDiscover(selfIP string) {
 	p.ciTable = clientinfo.NewTable(&cfg, selfIP, cdUID, p.ptrNameservers)
 	if leaseFile := p.cfg.Service.DHCPLeaseFile; leaseFile != "" {
 		mainLog.Load().Debug().Msgf("watching custom lease file: %s", leaseFile)
@@ -626,17 +626,17 @@ func (p *prog) setupClientInfoDiscover(selfIP string) {
 }
 
 // runClientInfoDiscover runs the client info discover.
-func (p *prog) runClientInfoDiscover(ctx context.Context) {
+func (p *Prog) runClientInfoDiscover(ctx context.Context) {
 	p.ciTable.Init()
 	p.ciTable.RefreshLoop(ctx)
 }
 
 // metricsEnabled reports whether prometheus exporter is enabled/disabled.
-func (p *prog) metricsEnabled() bool {
+func (p *Prog) metricsEnabled() bool {
 	return p.cfg.Service.MetricsQueryStats || p.cfg.Service.MetricsListener != ""
 }
 
-func (p *prog) Stop(s service.Service) error {
+func (p *Prog) Stop(s service.Service) error {
 	p.stopDnsWatchers()
 	mainLog.Load().Debug().Msg("dns watchers stopped")
 	for _, f := range p.onStopped {
@@ -677,7 +677,7 @@ func (p *prog) Stop(s service.Service) error {
 	return nil
 }
 
-func (p *prog) stopDnsWatchers() {
+func (p *Prog) stopDnsWatchers() {
 	// Ensure all DNS watchers goroutine are terminated,
 	// so it won't mess up with other DNS changes.
 	p.dnsWatcherClosedOnce.Do(func() {
@@ -686,7 +686,7 @@ func (p *prog) stopDnsWatchers() {
 	p.dnsWg.Wait()
 }
 
-func (p *prog) allocateIP(ip string) error {
+func (p *Prog) allocateIP(ip string) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if !p.cfg.Service.AllocateIP {
@@ -695,7 +695,7 @@ func (p *prog) allocateIP(ip string) error {
 	return allocateIP(ip)
 }
 
-func (p *prog) deAllocateIP() error {
+func (p *Prog) deAllocateIP() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if !p.cfg.Service.AllocateIP {
@@ -709,7 +709,7 @@ func (p *prog) deAllocateIP() error {
 	return nil
 }
 
-func (p *prog) SetDNS() {
+func (p *Prog) SetDNS() {
 	setDnsOK := false
 	defer func() {
 		p.csSetDnsOk = setDnsOK
@@ -781,7 +781,7 @@ func (p *prog) SetDNS() {
 	}
 }
 
-func (p *prog) setDnsForRunningIface(nameservers []string) (runningIface *net.Interface) {
+func (p *Prog) setDnsForRunningIface(nameservers []string) (runningIface *net.Interface) {
 	if p.runningIface == "" {
 		return
 	}
@@ -830,7 +830,7 @@ func (p *prog) setDnsForRunningIface(nameservers []string) (runningIface *net.In
 }
 
 // dnsWatchdogEnabled reports whether DNS watchdog is enabled.
-func (p *prog) dnsWatchdogEnabled() bool {
+func (p *Prog) dnsWatchdogEnabled() bool {
 	if ptr := p.cfg.Service.DnsWatchdogEnabled; ptr != nil {
 		return *ptr
 	}
@@ -838,7 +838,7 @@ func (p *prog) dnsWatchdogEnabled() bool {
 }
 
 // dnsWatchdogDuration returns the time duration between each DNS watchdog loop.
-func (p *prog) dnsWatchdogDuration() time.Duration {
+func (p *Prog) dnsWatchdogDuration() time.Duration {
 	if ptr := p.cfg.Service.DnsWatchdogInvterval; ptr != nil {
 		if (*ptr).Seconds() > 0 {
 			return *ptr
@@ -849,7 +849,7 @@ func (p *prog) dnsWatchdogDuration() time.Duration {
 
 // dnsWatchdog watches for DNS changes on Darwin and Windows then re-applying ctrld's settings.
 // This is only works when deactivation pin set.
-func (p *prog) dnsWatchdog(iface *net.Interface, nameservers []string) {
+func (p *Prog) dnsWatchdog(iface *net.Interface, nameservers []string) {
 	if !requiredMultiNICsConfig() {
 		return
 	}
@@ -936,12 +936,12 @@ func (p *prog) dnsWatchdog(iface *net.Interface, nameservers []string) {
 }
 
 // resetDNS performs a DNS reset for all interfaces.
-func (p *prog) resetDNS(isStart bool, restoreStatic bool) {
+func (p *Prog) resetDNS(isStart bool, restoreStatic bool) {
 	netIfaceName := ""
 	if netIface := p.resetDNSForRunningIface(isStart, restoreStatic); netIface != nil {
 		netIfaceName = netIface.Name
 	}
-	// See corresponding comments in (*prog).setDNS function.
+	// See corresponding comments in (*Prog).setDNS function.
 	if p.requiredMultiNICsConfig {
 		withEachPhysicalInterfaces(netIfaceName, "reset DNS", resetDnsIgnoreUnusableInterface)
 	}
@@ -953,7 +953,7 @@ func (p *prog) resetDNS(isStart bool, restoreStatic bool) {
 // service listener (127.0.0.1). If so, we assume that an admin has manually changed the interface's
 // static DNS settings and we do not override them using the potentially out-of-date saved file.
 // Otherwise, we restore the saved configuration (if any) or reset to DHCP.
-func (p *prog) resetDNSForRunningIface(isStart bool, restoreStatic bool) (runningIface *net.Interface) {
+func (p *Prog) resetDNSForRunningIface(isStart bool, restoreStatic bool) (runningIface *net.Interface) {
 	if p.runningIface == "" {
 		mainLog.Load().Debug().Msg("no running interface, skipping resetDNS")
 		return
@@ -1009,7 +1009,7 @@ func (p *prog) resetDNSForRunningIface(isStart bool, restoreStatic bool) (runnin
 	return
 }
 
-func (p *prog) logInterfacesState() {
+func (p *Prog) logInterfacesState() {
 	withEachPhysicalInterfaces("", "", func(i *net.Interface) error {
 		addrs, err := i.Addrs()
 		if err != nil {
@@ -1473,7 +1473,7 @@ func dnsChanged(iface *net.Interface, nameservers []string) bool {
 }
 
 // selfUninstallCheck checks if the error dues to controld.InvalidConfigCode, perform self-uninstall then.
-func selfUninstallCheck(uninstallErr error, p *prog, logger zerolog.Logger) {
+func selfUninstallCheck(uninstallErr error, p *Prog, logger zerolog.Logger) {
 	var uer *controld.ErrorResponse
 	if errors.As(uninstallErr, &uer) && uer.ErrorField.Code == controld.InvalidConfigCode {
 		p.stopDnsWatchers()
@@ -1556,7 +1556,7 @@ func selfUpgradeCheck(vt string, cv *semver.Version, logger *zerolog.Logger) boo
 
 // leakOnUpstreamFailure reports whether ctrld should initiate a recovery flow
 // when upstream failures occur.
-func (p *prog) leakOnUpstreamFailure() bool {
+func (p *Prog) leakOnUpstreamFailure() bool {
 	if ptr := p.cfg.Service.LeakOnUpstreamFailure; ptr != nil {
 		return *ptr
 	}

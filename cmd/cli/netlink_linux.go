@@ -7,7 +7,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func (p *prog) watchLinkState(ctx context.Context) {
+func (p *Prog) watchLinkState(ctx context.Context) {
 	ch := make(chan netlink.LinkUpdate)
 	done := make(chan struct{})
 	defer close(done)

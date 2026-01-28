@@ -47,7 +47,7 @@ func (lg *loopGuard) Unlock(domain string) {
 }
 
 // isLoop reports whether the given upstream config is detected as having DNS loop.
-func (p *prog) isLoop(uc *ctrld.UpstreamConfig) bool {
+func (p *Prog) isLoop(uc *ctrld.UpstreamConfig) bool {
 	p.loopMu.Lock()
 	defer p.loopMu.Unlock()
 	return p.loop[uc.UID()]
@@ -58,7 +58,7 @@ func (p *prog) isLoop(uc *ctrld.UpstreamConfig) bool {
 // forwarding loop.
 //
 // See p.checkDnsLoop for more details how it works.
-func (p *prog) detectLoop(msg *dns.Msg) {
+func (p *Prog) detectLoop(msg *dns.Msg) {
 	if len(msg.Question) != 1 {
 		return
 	}
@@ -83,7 +83,7 @@ func (p *prog) detectLoop(msg *dns.Msg) {
 // - If the test query returns to ctrld, mark the corresponding upstream as loop (see p.detectLoop).
 //
 // See: https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
-func (p *prog) checkDnsLoop() {
+func (p *Prog) checkDnsLoop() {
 	mainLog.Load().Debug().Msg("start checking DNS loop")
 	upstream := make(map[string]*ctrld.UpstreamConfig)
 	p.loopMu.Lock()
@@ -122,7 +122,7 @@ func (p *prog) checkDnsLoop() {
 }
 
 // checkDnsLoopTicker performs p.checkDnsLoop every minute.
-func (p *prog) checkDnsLoopTicker(ctx context.Context) {
+func (p *Prog) checkDnsLoopTicker(ctx context.Context) {
 	timer := time.NewTicker(time.Minute)
 	defer timer.Stop()
 	for {

@@ -76,7 +76,7 @@ func Test_canonicalName(t *testing.T) {
 func Test_prog_upstreamFor(t *testing.T) {
 	cfg := testhelper.SampleConfig(t)
 	cfg.Service.LeakOnUpstreamFailure = func(v bool) *bool { return &v }(false)
-	p := &prog{cfg: cfg}
+	p := &Prog{cfg: cfg}
 	p.um = newUpstreamMonitor(p.cfg)
 	p.lanLoopGuard = newLoopGuard()
 	p.ptrLoopGuard = newLoopGuard()
@@ -144,8 +144,8 @@ func Test_prog_upstreamFor(t *testing.T) {
 
 func TestCache(t *testing.T) {
 	cfg := testhelper.SampleConfig(t)
-	prog := &prog{cfg: cfg}
-	for _, nc := range prog.cfg.Network {
+	Prog := &Prog{cfg: cfg}
+	for _, nc := range Prog.cfg.Network {
 		for _, cidr := range nc.Cidrs {
 			_, ipNet, err := net.ParseCIDR(cidr)
 			if err != nil {
@@ -156,7 +156,7 @@ func TestCache(t *testing.T) {
 	}
 	cacher, err := dnscache.NewLRUCache(4096)
 	require.NoError(t, err)
-	prog.cache = cacher
+	Prog.cache = cacher
 
 	msg := new(dns.Msg)
 	msg.SetQuestion("example.com", dns.TypeA)
@@ -164,10 +164,10 @@ func TestCache(t *testing.T) {
 	answer1 := new(dns.Msg)
 	answer1.SetRcode(msg, dns.RcodeSuccess)
 
-	prog.cache.Add(dnscache.NewKey(msg, "upstream.1"), dnscache.NewValue(answer1, time.Now().Add(time.Minute)))
+	Prog.cache.Add(dnscache.NewKey(msg, "upstream.1"), dnscache.NewValue(answer1, time.Now().Add(time.Minute)))
 	answer2 := new(dns.Msg)
 	answer2.SetRcode(msg, dns.RcodeRefused)
-	prog.cache.Add(dnscache.NewKey(msg, "upstream.0"), dnscache.NewValue(answer2, time.Now().Add(time.Minute)))
+	Prog.cache.Add(dnscache.NewKey(msg, "upstream.0"), dnscache.NewValue(answer2, time.Now().Add(time.Minute)))
 
 	req1 := &proxyRequest{
 		msg:            msg,
@@ -193,8 +193,8 @@ func TestCache(t *testing.T) {
 			matched:        false,
 		},
 	}
-	got1 := prog.proxy(context.Background(), req1)
-	got2 := prog.proxy(context.Background(), req2)
+	got1 := Prog.proxy(context.Background(), req1)
+	got2 := Prog.proxy(context.Background(), req2)
 	assert.NotSame(t, got1, got2)
 	assert.Equal(t, answer1.Rcode, got1.answer.Rcode)
 	assert.Equal(t, answer2.Rcode, got2.answer.Rcode)

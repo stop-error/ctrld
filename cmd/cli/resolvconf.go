@@ -13,7 +13,7 @@ import (
 
 // parseResolvConfNameservers reads the resolv.conf file and returns the nameservers found.
 // Returns nil if no nameservers are found.
-func (p *prog) parseResolvConfNameservers(path string) ([]string, error) {
+func (p *Prog) parseResolvConfNameservers(path string) ([]string, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func (p *prog) parseResolvConfNameservers(path string) ([]string, error) {
 
 // watchResolvConf watches any changes to /etc/resolv.conf file,
 // and reverting to the original config set by ctrld.
-func (p *prog) watchResolvConf(iface *net.Interface, ns []netip.Addr, setDnsFn func(iface *net.Interface, ns []netip.Addr) error) {
+func (p *Prog) watchResolvConf(iface *net.Interface, ns []netip.Addr, setDnsFn func(iface *net.Interface, ns []netip.Addr) error) {
 	resolvConfPath := "/etc/resolv.conf"
 	// Evaluating symbolics link to watch the target file that /etc/resolv.conf point to.
 	if rp, _ := filepath.EvalSymlinks(resolvConfPath); rp != "" {

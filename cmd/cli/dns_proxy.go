@@ -84,7 +84,7 @@ type upstreamForResult struct {
 	srcAddr        string
 }
 
-func (p *prog) serveDNS(listenerNum string) error {
+func (p *Prog) serveDNS(listenerNum string) error {
 	listenerConfig := p.cfg.Listener[listenerNum]
 	// make sure ip is allocated
 	if allocErr := p.allocateIP(listenerConfig.IP); allocErr != nil {
@@ -255,7 +255,7 @@ func (p *prog) serveDNS(listenerNum string) error {
 // Though domain policy has higher priority than network policy, it is still
 // processed later, because policy logging want to know whether a network rule
 // is disregarded in favor of the domain level rule.
-func (p *prog) upstreamFor(ctx context.Context, defaultUpstreamNum string, lc *ctrld.ListenerConfig, addr net.Addr, srcMac, domain string) (res *upstreamForResult) {
+func (p *Prog) upstreamFor(ctx context.Context, defaultUpstreamNum string, lc *ctrld.ListenerConfig, addr net.Addr, srcMac, domain string) (res *upstreamForResult) {
 	upstreams := []string{upstreamPrefix + defaultUpstreamNum}
 	matchedPolicy := "no policy"
 	matchedNetwork := "no network"
@@ -344,7 +344,7 @@ macRules:
 	return
 }
 
-func (p *prog) proxyPrivatePtrLookup(ctx context.Context, msg *dns.Msg) *dns.Msg {
+func (p *Prog) proxyPrivatePtrLookup(ctx context.Context, msg *dns.Msg) *dns.Msg {
 	cDomainName := msg.Question[0].Name
 	locked := p.ptrLoopGuard.TryLock(cDomainName)
 	defer p.ptrLoopGuard.Unlock(cDomainName)
@@ -375,7 +375,7 @@ func (p *prog) proxyPrivatePtrLookup(ctx context.Context, msg *dns.Msg) *dns.Msg
 	return nil
 }
 
-func (p *prog) proxyLanHostnameQuery(ctx context.Context, msg *dns.Msg) *dns.Msg {
+func (p *Prog) proxyLanHostnameQuery(ctx context.Context, msg *dns.Msg) *dns.Msg {
 	q := msg.Question[0]
 	hostname := strings.TrimSuffix(q.Name, ".")
 	locked := p.lanLoopGuard.TryLock(hostname)
@@ -420,7 +420,7 @@ func (p *prog) proxyLanHostnameQuery(ctx context.Context, msg *dns.Msg) *dns.Msg
 	return nil
 }
 
-func (p *prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
+func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 	var staleAnswer *dns.Msg
 	upstreams := req.ufr.upstreams
 	serveStaleCache := p.cache != nil && p.cfg.Service.CacheServeStale
@@ -657,7 +657,7 @@ func (p *prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 	return res
 }
 
-func (p *prog) upstreamsAndUpstreamConfigForPtr(upstreams []string, upstreamConfigs []*ctrld.UpstreamConfig) ([]string, []*ctrld.UpstreamConfig) {
+func (p *Prog) upstreamsAndUpstreamConfigForPtr(upstreams []string, upstreamConfigs []*ctrld.UpstreamConfig) ([]string, []*ctrld.UpstreamConfig) {
 	if len(p.localUpstreams) > 0 {
 		tmp := make([]string, 0, len(p.localUpstreams)+len(upstreams))
 		tmp = append(tmp, p.localUpstreams...)
@@ -667,7 +667,7 @@ func (p *prog) upstreamsAndUpstreamConfigForPtr(upstreams []string, upstreamConf
 	return append([]string{upstreamOS}, upstreams...), append([]*ctrld.UpstreamConfig{privateUpstreamConfig}, upstreamConfigs...)
 }
 
-func (p *prog) upstreamConfigsFromUpstreamNumbers(upstreams []string) []*ctrld.UpstreamConfig {
+func (p *Prog) upstreamConfigsFromUpstreamNumbers(upstreams []string) []*ctrld.UpstreamConfig {
 	upstreamConfigs := make([]*ctrld.UpstreamConfig, 0, len(upstreams))
 	for _, upstream := range upstreams {
 		upstreamNum := strings.TrimPrefix(upstream, upstreamPrefix)
@@ -676,7 +676,7 @@ func (p *prog) upstreamConfigsFromUpstreamNumbers(upstreams []string) []*ctrld.U
 	return upstreamConfigs
 }
 
-func (p *prog) isAdDomainQuery(msg *dns.Msg) bool {
+func (p *Prog) isAdDomainQuery(msg *dns.Msg) bool {
 	if p.adDomain == "" {
 		return false
 	}
@@ -864,7 +864,7 @@ func runDNSServer(addr, network string, handler dns.Handler) (*dns.Server, <-cha
 	return s, errCh
 }
 
-func (p *prog) getClientInfo(remoteIP string, msg *dns.Msg) *ctrld.ClientInfo {
+func (p *Prog) getClientInfo(remoteIP string, msg *dns.Msg) *ctrld.ClientInfo {
 	ci := &ctrld.ClientInfo{}
 	if p.appCallback != nil {
 		ci.IP = p.appCallback.LanIp()
@@ -926,7 +926,7 @@ func (p *prog) getClientInfo(remoteIP string, msg *dns.Msg) *ctrld.ClientInfo {
 //
 // - Preference IPv4.
 // - Preference RFC1918.
-func (p *prog) spoofLoopbackIpInClientInfo(ci *ctrld.ClientInfo) {
+func (p *Prog) spoofLoopbackIpInClientInfo(ci *ctrld.ClientInfo) {
 	if ip := net.ParseIP(ci.IP); ip == nil || !ip.IsLoopback() {
 		return
 	}
@@ -940,7 +940,7 @@ func (p *prog) spoofLoopbackIpInClientInfo(ci *ctrld.ClientInfo) {
 // - There is only 1 ControlD upstream in-use.
 // - Number of refused queries seen so far equals to selfUninstallMaxQueries.
 // - The cdUID is deleted.
-func (p *prog) doSelfUninstall(answer *dns.Msg) {
+func (p *Prog) doSelfUninstall(answer *dns.Msg) {
 	if !p.canSelfUninstall.Load() || answer == nil || answer.Rcode != dns.RcodeRefused {
 		return
 	}
@@ -970,7 +970,7 @@ func (p *prog) doSelfUninstall(answer *dns.Msg) {
 
 // selfUninstallCoolOfPeriod waits for 30 minutes before
 // calling API again for checking ControlD device status.
-func (p *prog) selfUninstallCoolOfPeriod() {
+func (p *Prog) selfUninstallCoolOfPeriod() {
 	t := time.NewTimer(time.Minute * 30)
 	defer t.Stop()
 	<-t.C
@@ -982,7 +982,7 @@ func (p *prog) selfUninstallCoolOfPeriod() {
 
 // forceFetchingAPI sends signal to force syncing API config if run in cd mode,
 // and the domain == "cdUID.verify.controld.com"
-func (p *prog) forceFetchingAPI(domain string) {
+func (p *Prog) forceFetchingAPI(domain string) {
 	if cdUID == "" {
 		return
 	}
@@ -1016,7 +1016,7 @@ func timeDurationOrDefault(n *int, defaultN int) time.Duration {
 }
 
 // queryFromSelf reports whether the input IP is from device running ctrld.
-func (p *prog) queryFromSelf(ip string) bool {
+func (p *Prog) queryFromSelf(ip string) bool {
 	if val, ok := p.queryFromSelfMap.Load(ip); ok {
 		return val.(bool)
 	}
@@ -1181,7 +1181,7 @@ func FlushDNSCache() error {
 }
 
 // monitorNetworkChanges starts monitoring for network interface changes
-func (p *prog) monitorNetworkChanges() error {
+func (p *Prog) monitorNetworkChanges() error {
 	mon, err := netmon.New(func(format string, args ...any) {
 		// Always fetch the latest logger (and inject the prefix)
 		mainLog.Load().Printf("netmon: "+format, args...)
@@ -1391,7 +1391,7 @@ func interfaceIPsEqual(a, b []netip.Prefix) bool {
 
 // checkUpstreamOnce sends a test query to the specified upstream.
 // Returns nil if the upstream responds successfully.
-func (p *prog) checkUpstreamOnce(upstream string, uc *ctrld.UpstreamConfig) error {
+func (p *Prog) checkUpstreamOnce(upstream string, uc *ctrld.UpstreamConfig) error {
 	mainLog.Load().Debug().Msgf("Starting check for upstream: %s", upstream)
 
 	resolver, err := ctrld.NewResolver(uc)
@@ -1429,7 +1429,7 @@ func (p *prog) checkUpstreamOnce(upstream string, uc *ctrld.UpstreamConfig) erro
 // canceling existing recovery checks for network changes, but coalescing duplicate
 // upstream failure recoveries, waiting for recovery to complete (using a cancellable context without timeout),
 // and then re-applying the DNS settings.
-func (p *prog) handleRecovery(reason RecoveryReason) {
+func (p *Prog) handleRecovery(reason RecoveryReason) {
 	mainLog.Load().Debug().Msg("Starting recovery process: removing DNS settings")
 
 	// For network changes, cancel any existing recovery check because the network state has changed.
@@ -1519,7 +1519,7 @@ func (p *prog) handleRecovery(reason RecoveryReason) {
 
 // waitForUpstreamRecovery checks the provided upstreams concurrently until one recovers.
 // It returns the name of the recovered upstream or an error if the check times out.
-func (p *prog) waitForUpstreamRecovery(ctx context.Context, upstreams map[string]*ctrld.UpstreamConfig) (string, error) {
+func (p *Prog) waitForUpstreamRecovery(ctx context.Context, upstreams map[string]*ctrld.UpstreamConfig) (string, error) {
 	recoveredCh := make(chan string, 1)
 	var wg sync.WaitGroup
 
@@ -1581,7 +1581,7 @@ func (p *prog) waitForUpstreamRecovery(ctx context.Context, upstreams map[string
 // buildRecoveryUpstreams constructs the map of upstream configurations to test.
 // For OS failures we supply the manual OS resolver upstream configuration.
 // For network change or regular failure we use the upstreams defined in p.cfg (ignoring OS).
-func (p *prog) buildRecoveryUpstreams(reason RecoveryReason) map[string]*ctrld.UpstreamConfig {
+func (p *Prog) buildRecoveryUpstreams(reason RecoveryReason) map[string]*ctrld.UpstreamConfig {
 	upstreams := make(map[string]*ctrld.UpstreamConfig)
 	switch reason {
 	case RecoveryReasonOSFailure:

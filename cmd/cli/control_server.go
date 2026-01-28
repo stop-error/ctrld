@@ -77,7 +77,7 @@ func (s *controlServer) register(pattern string, handler http.Handler) {
 	s.mux.Handle(pattern, jsonResponse(handler))
 }
 
-func (p *prog) registerControlServerHandler() {
+func (p *Prog) registerControlServerHandler() {
 	p.cs.register(listClientsPath, http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		mainLog.Load().Debug().Msg("handling list clients request")
 

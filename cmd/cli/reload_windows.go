@@ -8,7 +8,7 @@ import (
 
 func notifyReloadSigCh(ch chan os.Signal) {}
 
-func (p *prog) sendReloadSignal() error {
+func (p *Prog) sendReloadSignal() error {
 	select {
 	case p.reloadCh <- struct{}{}:
 		return nil

@@ -4,4 +4,4 @@ package cli
 
 import "context"
 
-func (p *prog) watchLinkState(ctx context.Context) {}
+func (p *Prog) watchLinkState(ctx context.Context) {}

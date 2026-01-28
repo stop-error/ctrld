@@ -50,7 +50,7 @@ var statsClientQueriesCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 }, []string{metricsLabelClientSourceIP, metricsLabelClientMac, metricsLabelClientHostname})
 
 // WithLabelValuesInc increases prometheus counter by 1 if query stats is enabled.
-func (p *prog) WithLabelValuesInc(c *prometheus.CounterVec, lvs ...string) {
+func (p *Prog) WithLabelValuesInc(c *prometheus.CounterVec, lvs ...string) {
 	if p.metricsQueryStats.Load() {
 		c.WithLabelValues(lvs...).Inc()
 	}

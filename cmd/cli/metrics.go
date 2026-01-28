@@ -95,7 +95,7 @@ func (ms *metricsServer) stop() error {
 }
 
 // runMetricsServer initializes metrics stats and runs the metrics server if enabled.
-func (p *prog) runMetricsServer(ctx context.Context, reloadCh chan struct{}) {
+func (p *Prog) runMetricsServer(ctx context.Context, reloadCh chan struct{}) {
 	if !p.metricsEnabled() {
 		return
 	}

@@ -48,7 +48,7 @@ func initLogCmd() *cobra.Command {
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 
-			p := &prog{router: router.New(&cfg, false)}
+			p := &Prog{router: router.New(&cfg, false)}
 			s, _ := newService(p, svcConfig)
 
 			status, err := s.Status()
@@ -101,7 +101,7 @@ func initLogCmd() *cobra.Command {
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 
-			p := &prog{router: router.New(&cfg, false)}
+			p := &Prog{router: router.New(&cfg, false)}
 			s, _ := newService(p, svcConfig)
 
 			status, err := s.Status()
@@ -229,7 +229,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 			setDependencies(sc)
 			sc.Arguments = append([]string{"run"}, osArgs...)
 
-			p := &prog{
+			p := &Prog{
 				router: router.New(&cfg, cdUID != ""),
 				cfg:    &cfg,
 			}
@@ -607,7 +607,7 @@ func initStopCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			readConfig(false)
 			v.Unmarshal(&cfg)
-			p := &prog{router: router.New(&cfg, runInCdMode())}
+			p := &Prog{router: router.New(&cfg, runInCdMode())}
 			s, err := newService(p, svcConfig)
 			if err != nil {
 				mainLog.Load().Error().Msg(err.Error())
@@ -695,7 +695,7 @@ func initRestartCmd() *cobra.Command {
 			cdUID = curCdUID()
 			cdMode := cdUID != ""
 
-			p := &prog{router: router.New(&cfg, cdMode)}
+			p := &Prog{router: router.New(&cfg, cdMode)}
 			s, err := newService(p, svcConfig)
 			if err != nil {
 				mainLog.Load().Error().Msg(err.Error())
@@ -820,7 +820,7 @@ func initReloadCmd(restartCmd *cobra.Command) *cobra.Command {
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 
-			p := &prog{router: router.New(&cfg, false)}
+			p := &Prog{router: router.New(&cfg, false)}
 			s, _ := newService(p, svcConfig)
 
 			status, err := s.Status()
@@ -847,7 +847,7 @@ func initReloadCmd(restartCmd *cobra.Command) *cobra.Command {
 			case http.StatusOK:
 				mainLog.Load().Notice().Msg("Service reloaded")
 			case http.StatusCreated:
-				s, err := newService(&prog{}, svcConfig)
+				s, err := newService(&Prog{}, svcConfig)
 				if err != nil {
 					mainLog.Load().Error().Msg(err.Error())
 					return
@@ -890,7 +890,7 @@ func initStatusCmd() *cobra.Command {
 		Short: "Show status of the ctrld service",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			s, err := newService(&prog{}, svcConfig)
+			s, err := newService(&Prog{}, svcConfig)
 			if err != nil {
 				mainLog.Load().Error().Msg(err.Error())
 				return
@@ -945,7 +945,7 @@ NOTE: Uninstalling will set DNS to values provided by DHCP.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			readConfig(false)
 			v.Unmarshal(&cfg)
-			p := &prog{router: router.New(&cfg, runInCdMode())}
+			p := &Prog{router: router.New(&cfg, runInCdMode())}
 			s, err := newService(p, svcConfig)
 			if err != nil {
 				mainLog.Load().Error().Msg(err.Error())
@@ -1121,7 +1121,7 @@ func initClientsCmd() *cobra.Command {
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 
-			p := &prog{router: router.New(&cfg, false)}
+			p := &Prog{router: router.New(&cfg, false)}
 			s, _ := newService(p, svcConfig)
 
 			status, err := s.Status()
@@ -1234,7 +1234,7 @@ func initUpgradeCmd() *cobra.Command {
 			sc.Executable = bin
 			readConfig(false)
 			v.Unmarshal(&cfg)
-			p := &prog{router: router.New(&cfg, runInCdMode())}
+			p := &Prog{router: router.New(&cfg, runInCdMode())}
 			s, err := newService(p, sc)
 			if err != nil {
 				mainLog.Load().Error().Msg(err.Error())
