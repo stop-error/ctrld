@@ -36,8 +36,8 @@ const dialSocketControlServerTimeout = 30 * time.Second
 
 func initLogCmd() *cobra.Command {
 	warnRuntimeLoggingNotEnabled := func() {
-		mainLog.Load().Warn().Msg("runtime debug logging is not enabled")
-		mainLog.Load().Warn().Msg(`ctrld may be running without "--cd" flag or logging is already enabled`)
+		MainLog.Load().Warn().Msg("runtime debug logging is not enabled")
+		MainLog.Load().Warn().Msg(`ctrld may be running without "--cd" flag or logging is already enabled`)
 	}
 	logSendCmd := &cobra.Command{
 		Use:   "send",
@@ -53,27 +53,27 @@ func initLogCmd() *cobra.Command {
 
 			status, err := s.Status()
 			if errors.Is(err, service.ErrNotInstalled) {
-				mainLog.Load().Warn().Msg("service not installed")
+				MainLog.Load().Warn().Msg("service not installed")
 				return
 			}
 			if status == service.StatusStopped {
-				mainLog.Load().Warn().Msg("service is not running")
+				MainLog.Load().Warn().Msg("service is not running")
 				return
 			}
 
 			dir, err := socketDir()
 			if err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to find ctrld home dir")
+				MainLog.Load().Fatal().Err(err).Msg("failed to find ctrld home dir")
 			}
 			cc := newControlClient(filepath.Join(dir, ctrldControlUnixSock))
 			resp, err := cc.post(sendLogsPath, nil)
 			if err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to send logs")
+				MainLog.Load().Fatal().Err(err).Msg("failed to send logs")
 			}
 			defer resp.Body.Close()
 			switch resp.StatusCode {
 			case http.StatusServiceUnavailable:
-				mainLog.Load().Warn().Msg("runtime logs could only be sent once per minute")
+				MainLog.Load().Warn().Msg("runtime logs could only be sent once per minute")
 				return
 			case http.StatusMovedPermanently:
 				warnRuntimeLoggingNotEnabled()
@@ -81,14 +81,14 @@ func initLogCmd() *cobra.Command {
 			}
 			var logs logSentResponse
 			if err := json.NewDecoder(resp.Body).Decode(&logs); err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to decode sent logs result")
+				MainLog.Load().Fatal().Err(err).Msg("failed to decode sent logs result")
 			}
 			size := units.BytesSize(float64(logs.Size))
 			if logs.Error == "" {
-				mainLog.Load().Notice().Msgf("runtime logs sent successfully (%s)", size)
+				MainLog.Load().Notice().Msgf("runtime logs sent successfully (%s)", size)
 			} else {
-				mainLog.Load().Error().Msgf("failed to send logs (%s)", size)
-				mainLog.Load().Error().Msg(logs.Error)
+				MainLog.Load().Error().Msgf("failed to send logs (%s)", size)
+				MainLog.Load().Error().Msg(logs.Error)
 			}
 		},
 	}
@@ -106,22 +106,22 @@ func initLogCmd() *cobra.Command {
 
 			status, err := s.Status()
 			if errors.Is(err, service.ErrNotInstalled) {
-				mainLog.Load().Warn().Msg("service not installed")
+				MainLog.Load().Warn().Msg("service not installed")
 				return
 			}
 			if status == service.StatusStopped {
-				mainLog.Load().Warn().Msg("service is not running")
+				MainLog.Load().Warn().Msg("service is not running")
 				return
 			}
 
 			dir, err := socketDir()
 			if err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to find ctrld home dir")
+				MainLog.Load().Fatal().Err(err).Msg("failed to find ctrld home dir")
 			}
 			cc := newControlClient(filepath.Join(dir, ctrldControlUnixSock))
 			resp, err := cc.post(viewLogsPath, nil)
 			if err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to get logs")
+				MainLog.Load().Fatal().Err(err).Msg("failed to get logs")
 			}
 			defer resp.Body.Close()
 
@@ -130,18 +130,18 @@ func initLogCmd() *cobra.Command {
 				warnRuntimeLoggingNotEnabled()
 				return
 			case http.StatusBadRequest:
-				mainLog.Load().Warn().Msg("runtime debugs log is not available")
+				MainLog.Load().Warn().Msg("runtime debugs log is not available")
 				buf, err := io.ReadAll(resp.Body)
 				if err != nil {
-					mainLog.Load().Fatal().Err(err).Msg("failed to read response body")
+					MainLog.Load().Fatal().Err(err).Msg("failed to read response body")
 				}
-				mainLog.Load().Warn().Msgf("ctrld process response:\n\n%s\n", string(buf))
+				MainLog.Load().Warn().Msgf("ctrld process response:\n\n%s\n", string(buf))
 				return
 			case http.StatusOK:
 			}
 			var logs logViewResponse
 			if err := json.NewDecoder(resp.Body).Decode(&logs); err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to decode view logs result")
+				MainLog.Load().Fatal().Err(err).Msg("failed to decode view logs result")
 			}
 			fmt.Println(logs.Data)
 		},
@@ -235,7 +235,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 			}
 			s, err := newService(p, sc)
 			if err != nil {
-				mainLog.Load().Error().Msg(err.Error())
+				MainLog.Load().Error().Msg(err.Error())
 				return
 			}
 			p.preRun()
@@ -253,7 +253,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 					os.Exit(deactivationPinInvalidExitCode)
 				}
 				currentIface = runningIface(s)
-				mainLog.Load().Debug().Msgf("current interface on start: %v", currentIface)
+				MainLog.Load().Debug().Msgf("current interface on start: %v", currentIface)
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
@@ -267,7 +267,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 						}
 						res := &ifaceResponse{}
 						if err := json.NewDecoder(resp.Body).Decode(res); err != nil {
-							mainLog.Load().Warn().Err(err).Msg("failed to get iface info")
+							MainLog.Load().Warn().Err(err).Msg("failed to get iface info")
 							return
 						}
 						if res.OK {
@@ -276,7 +276,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 								_, _ = patchNetIfaceName(iff)
 								name = iff.Name
 							}
-							logger := mainLog.Load().With().Str("iface", name).Logger()
+							logger := MainLog.Load().With().Str("iface", name).Logger()
 							logger.Debug().Msg("setting DNS successfully")
 							if res.All {
 								// Log that DNS is set for other interfaces.
@@ -302,7 +302,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 			ud, err := userHomeDir()
 			sockDir := ud
 			if err != nil {
-				mainLog.Load().Warn().Msg("log server did not start")
+				MainLog.Load().Warn().Msg("log server did not start")
 				close(logServerStarted)
 			} else {
 				setWorkingDirectory(sc, ud)
@@ -348,12 +348,12 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 			if startOnly && isCtrldInstalled {
 				tryReadingConfigWithNotice(false, true)
 				if err := v.Unmarshal(&Cfg); err != nil {
-					mainLog.Load().Fatal().Msgf("failed to unmarshal config: %v", err)
+					MainLog.Load().Fatal().Msgf("failed to unmarshal config: %v", err)
 				}
 
 				// if already running, dont restart
 				if isCtrldRunning {
-					mainLog.Load().Notice().Msg("service is already running")
+					MainLog.Load().Notice().Msg("service is already running")
 					return
 				}
 
@@ -375,17 +375,17 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 					{s.Start, true, "Start"},
 					{noticeWritingControlDConfig, false, "Notice writing ControlD config"},
 				}
-				mainLog.Load().Notice().Msg("Starting existing ctrld service")
+				MainLog.Load().Notice().Msg("Starting existing ctrld service")
 				if doTasks(tasks) {
-					mainLog.Load().Notice().Msg("Service started")
+					MainLog.Load().Notice().Msg("Service started")
 					sockDir, err := socketDir()
 					if err != nil {
-						mainLog.Load().Warn().Err(err).Msg("Failed to get socket directory")
+						MainLog.Load().Warn().Err(err).Msg("Failed to get socket directory")
 						os.Exit(1)
 					}
 					reportSetDnsOk(sockDir)
 				} else {
-					mainLog.Load().Error().Err(err).Msg("Failed to start existing ctrld service")
+					MainLog.Load().Error().Err(err).Msg("Failed to start existing ctrld service")
 					os.Exit(1)
 				}
 				return
@@ -395,7 +395,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 				_ = doValidateCdRemoteConfig(cdUID, true)
 			} else if uid := cdUIDFromProvToken(); uid != "" {
 				cdUID = uid
-				mainLog.Load().Debug().Msg("using uid from provision token")
+				MainLog.Load().Debug().Msg("using uid from provision token")
 				removeOrgFlagsFromArgs(sc)
 				// Pass --cd flag to "ctrld run" command, so the provision token takes no effect.
 				sc.Arguments = append(sc.Arguments, "--cd="+cdUID)
@@ -405,7 +405,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 			}
 
 			if err := p.router.ConfigureService(sc); err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to configure service on router")
+				MainLog.Load().Fatal().Err(err).Msg("failed to configure service on router")
 			}
 
 			if configPath != "" {
@@ -415,7 +415,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 			tryReadingConfigWithNotice(writeDefaultConfig, true)
 
 			if err := v.Unmarshal(&Cfg); err != nil {
-				mainLog.Load().Fatal().Msgf("failed to unmarshal config: %v", err)
+				MainLog.Load().Fatal().Msgf("failed to unmarshal config: %v", err)
 			}
 
 			initInteractiveLogging()
@@ -432,7 +432,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 			}
 
 			if router.Name() != "" && iface != "" {
-				mainLog.Load().Debug().Msg("cleaning up router before installing")
+				MainLog.Load().Debug().Msg("cleaning up router before installing")
 				_ = p.router.Cleanup()
 			}
 
@@ -460,10 +460,10 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 				// generated after s.Start, so we notice users here for consistent with nextdns mode.
 				{noticeWritingControlDConfig, false, "Notice writing ControlD config"},
 			}
-			mainLog.Load().Notice().Msg("Starting service")
+			MainLog.Load().Notice().Msg("Starting service")
 			if doTasks(tasks) {
 				if err := p.router.Install(sc); err != nil {
-					mainLog.Load().Warn().Err(err).Msg("post installation failed, please check system/service log for details error")
+					MainLog.Load().Warn().Err(err).Msg("post installation failed, please check system/service log for details error")
 					return
 				}
 
@@ -473,38 +473,38 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 				ok, status, err := selfCheckStatus(ctx, s, sockDir)
 				switch {
 				case ok && status == service.StatusRunning:
-					mainLog.Load().Notice().Msg("Service started")
+					MainLog.Load().Notice().Msg("Service started")
 				default:
 					marker := bytes.Repeat([]byte("="), 32)
 					// If ctrld service is not running, emitting log obtained from ctrld process.
 					if status != service.StatusRunning || ctx.Err() != nil {
-						mainLog.Load().Error().Msg("ctrld service may not have started due to an error or misconfiguration, service log:")
-						_, _ = mainLog.Load().Write(marker)
+						MainLog.Load().Error().Msg("ctrld service may not have started due to an error or misconfiguration, service log:")
+						_, _ = MainLog.Load().Write(marker)
 						haveLog := false
 						for msg := range runCmdLogCh {
-							_, _ = mainLog.Load().Write([]byte(strings.ReplaceAll(msg, msgExit, "")))
+							_, _ = MainLog.Load().Write([]byte(strings.ReplaceAll(msg, msgExit, "")))
 							haveLog = true
 						}
 						// If we're unable to get log from "ctrld run", notice users about it.
 						if !haveLog {
-							mainLog.Load().Write([]byte(`<no log output is obtained from ctrld process>"`))
+							MainLog.Load().Write([]byte(`<no log output is obtained from ctrld process>"`))
 						}
 					}
 					// Report any error if occurred.
 					if err != nil {
-						_, _ = mainLog.Load().Write(marker)
+						_, _ = MainLog.Load().Write(marker)
 						msg := fmt.Sprintf("An error occurred while performing test query: %s", err)
-						mainLog.Load().Write([]byte(msg))
+						MainLog.Load().Write([]byte(msg))
 					}
 					// If ctrld service is running but selfCheckStatus failed, it could be related
 					// to user's system firewall configuration, notice users about it.
 					if status == service.StatusRunning && err == nil {
-						_, _ = mainLog.Load().Write(marker)
-						mainLog.Load().Write([]byte(`ctrld service was running, but a DNS query could not be sent to its listener`))
-						mainLog.Load().Write([]byte(`Please check your system firewall if it is configured to block/intercept/redirect DNS queries`))
+						_, _ = MainLog.Load().Write(marker)
+						MainLog.Load().Write([]byte(`ctrld service was running, but a DNS query could not be sent to its listener`))
+						MainLog.Load().Write([]byte(`Please check your system firewall if it is configured to block/intercept/redirect DNS queries`))
 					}
 
-					_, _ = mainLog.Load().Write(marker)
+					_, _ = MainLog.Load().Write(marker)
 					uninstall(p, s)
 					os.Exit(1)
 				}
@@ -539,7 +539,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 		Run: func(cmd *cobra.Command, _ []string) {
 			exe, err := os.Executable()
 			if err != nil {
-				mainLog.Load().Fatal().Msgf("could not find executable path: %v", err)
+				MainLog.Load().Fatal().Msgf("could not find executable path: %v", err)
 				os.Exit(1)
 			}
 			flags := make([]string, 0)
@@ -553,7 +553,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 			command.Stderr = os.Stderr
 			command.Stdin = os.Stdin
 			if err := command.Run(); err != nil {
-				mainLog.Load().Fatal().Msg(err.Error())
+				MainLog.Load().Fatal().Msg(err.Error())
 			}
 		},
 	}
@@ -610,12 +610,12 @@ func initStopCmd() *cobra.Command {
 			p := &Prog{router: router.New(&Cfg, runInCdMode())}
 			s, err := newService(p, svcConfig)
 			if err != nil {
-				mainLog.Load().Error().Msg(err.Error())
+				MainLog.Load().Error().Msg(err.Error())
 				return
 			}
 			p.preRun()
 			if ir := runningIface(s); ir != nil {
-				p.runningIface = ir.Name
+				p.RunningIface = ir.Name
 				p.RequiredMultiNICsConfig = ir.All
 			}
 
@@ -623,11 +623,11 @@ func initStopCmd() *cobra.Command {
 
 			status, err := s.Status()
 			if errors.Is(err, service.ErrNotInstalled) {
-				mainLog.Load().Warn().Msg("service not installed")
+				MainLog.Load().Warn().Msg("service not installed")
 				return
 			}
 			if status == service.StatusStopped {
-				mainLog.Load().Warn().Msg("service is already stopped")
+				MainLog.Load().Warn().Msg("service is already stopped")
 				return
 			}
 
@@ -642,7 +642,7 @@ func initStopCmd() *cobra.Command {
 					for {
 						select {
 						case <-ctx.Done():
-							mainLog.Load().Error().Msg("timeout while waiting for service to stop")
+							MainLog.Load().Error().Msg("timeout while waiting for service to stop")
 							return
 						default:
 						}
@@ -652,7 +652,7 @@ func initStopCmd() *cobra.Command {
 						}
 					}
 				}
-				mainLog.Load().Notice().Msg("Service stopped")
+				MainLog.Load().Notice().Msg("Service stopped")
 			}
 		},
 	}
@@ -698,11 +698,11 @@ func initRestartCmd() *cobra.Command {
 			p := &Prog{router: router.New(&Cfg, cdMode)}
 			s, err := newService(p, svcConfig)
 			if err != nil {
-				mainLog.Load().Error().Msg(err.Error())
+				MainLog.Load().Error().Msg(err.Error())
 				return
 			}
 			if _, err := s.Status(); errors.Is(err, service.ErrNotInstalled) {
-				mainLog.Load().Warn().Msg("service not installed")
+				MainLog.Load().Warn().Msg("service not installed")
 				return
 			}
 			if iface == "" {
@@ -710,7 +710,7 @@ func initRestartCmd() *cobra.Command {
 			}
 			p.preRun()
 			if ir := runningIface(s); ir != nil {
-				p.runningIface = ir.Name
+				p.RunningIface = ir.Name
 				p.RequiredMultiNICsConfig = ir.All
 			}
 
@@ -731,7 +731,7 @@ func initRestartCmd() *cobra.Command {
 					{func() error {
 						p.router.Cleanup()
 						// restore static DNS settings or DHCP
-						p.resetDNS(false, true)
+						p.ResetDNS(false, true)
 						return nil
 					}, false, "Cleanup"},
 					{func() error {
@@ -749,7 +749,7 @@ func initRestartCmd() *cobra.Command {
 						for {
 							select {
 							case <-ctx.Done():
-								mainLog.Load().Error().Msg("timeout while waiting for service to stop")
+								MainLog.Load().Error().Msg("timeout while waiting for service to stop")
 								break loop
 							default:
 							}
@@ -783,14 +783,14 @@ func initRestartCmd() *cobra.Command {
 					if cc := newSocketControlClientWithTimeout(context.TODO(), s, dir, timeout); cc != nil {
 						_, _ = cc.post(ifacePath, nil)
 					} else {
-						mainLog.Load().Warn().Err(err).Msg("Service was restarted, but ctrld process may not be ready yet")
+						MainLog.Load().Warn().Err(err).Msg("Service was restarted, but ctrld process may not be ready yet")
 					}
 				} else {
-					mainLog.Load().Warn().Err(err).Msg("Service was restarted, but could not ping the control server")
+					MainLog.Load().Warn().Err(err).Msg("Service was restarted, but could not ping the control server")
 				}
-				mainLog.Load().Notice().Msg("Service restarted")
+				MainLog.Load().Notice().Msg("Service restarted")
 			} else {
-				mainLog.Load().Error().Msg("Service restart failed")
+				MainLog.Load().Error().Msg("Service restart failed")
 			}
 		},
 	}
@@ -825,46 +825,46 @@ func initReloadCmd(restartCmd *cobra.Command) *cobra.Command {
 
 			status, err := s.Status()
 			if errors.Is(err, service.ErrNotInstalled) {
-				mainLog.Load().Warn().Msg("service not installed")
+				MainLog.Load().Warn().Msg("service not installed")
 				return
 			}
 			if status == service.StatusStopped {
-				mainLog.Load().Warn().Msg("service is not running")
+				MainLog.Load().Warn().Msg("service is not running")
 				return
 			}
 
 			dir, err := socketDir()
 			if err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to find ctrld home dir")
+				MainLog.Load().Fatal().Err(err).Msg("failed to find ctrld home dir")
 			}
 			cc := newControlClient(filepath.Join(dir, ctrldControlUnixSock))
 			resp, err := cc.post(reloadPath, nil)
 			if err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to send reload signal to ctrld")
+				MainLog.Load().Fatal().Err(err).Msg("failed to send reload signal to ctrld")
 			}
 			defer resp.Body.Close()
 			switch resp.StatusCode {
 			case http.StatusOK:
-				mainLog.Load().Notice().Msg("Service reloaded")
+				MainLog.Load().Notice().Msg("Service reloaded")
 			case http.StatusCreated:
 				s, err := newService(&Prog{}, svcConfig)
 				if err != nil {
-					mainLog.Load().Error().Msg(err.Error())
+					MainLog.Load().Error().Msg(err.Error())
 					return
 				}
-				mainLog.Load().Warn().Msg("Service was reloaded, but new config requires service restart.")
-				mainLog.Load().Warn().Msg("Restarting service")
+				MainLog.Load().Warn().Msg("Service was reloaded, but new config requires service restart.")
+				MainLog.Load().Warn().Msg("Restarting service")
 				if _, err := s.Status(); errors.Is(err, service.ErrNotInstalled) {
-					mainLog.Load().Warn().Msg("Service not installed")
+					MainLog.Load().Warn().Msg("Service not installed")
 					return
 				}
 				restartCmd.Run(cmd, args)
 			default:
 				buf, err := io.ReadAll(resp.Body)
 				if err != nil {
-					mainLog.Load().Fatal().Err(err).Msg("could not read response from control server")
+					MainLog.Load().Fatal().Err(err).Msg("could not read response from control server")
 				}
-				mainLog.Load().Error().Err(err).Msgf("failed to reload ctrld: %s", string(buf))
+				MainLog.Load().Error().Err(err).Msgf("failed to reload ctrld: %s", string(buf))
 			}
 		},
 	}
@@ -892,23 +892,23 @@ func initStatusCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			s, err := newService(&Prog{}, svcConfig)
 			if err != nil {
-				mainLog.Load().Error().Msg(err.Error())
+				MainLog.Load().Error().Msg(err.Error())
 				return
 			}
 			status, err := s.Status()
 			if err != nil {
-				mainLog.Load().Error().Msg(err.Error())
+				MainLog.Load().Error().Msg(err.Error())
 				os.Exit(1)
 			}
 			switch status {
 			case service.StatusUnknown:
-				mainLog.Load().Notice().Msg("Unknown status")
+				MainLog.Load().Notice().Msg("Unknown status")
 				os.Exit(2)
 			case service.StatusRunning:
-				mainLog.Load().Notice().Msg("Service is running")
+				MainLog.Load().Notice().Msg("Service is running")
 				os.Exit(0)
 			case service.StatusStopped:
-				mainLog.Load().Notice().Msg("Service is stopped")
+				MainLog.Load().Notice().Msg("Service is stopped")
 				os.Exit(1)
 			}
 		},
@@ -948,7 +948,7 @@ NOTE: Uninstalling will set DNS to values provided by DHCP.`,
 			p := &Prog{router: router.New(&Cfg, runInCdMode())}
 			s, err := newService(p, svcConfig)
 			if err != nil {
-				mainLog.Load().Error().Msg(err.Error())
+				MainLog.Load().Error().Msg(err.Error())
 				return
 			}
 			if iface == "" {
@@ -956,7 +956,7 @@ NOTE: Uninstalling will set DNS to values provided by DHCP.`,
 			}
 			p.preRun()
 			if ir := runningIface(s); ir != nil {
-				p.runningIface = ir.Name
+				p.RunningIface = ir.Name
 				p.RequiredMultiNICsConfig = ir.All
 			}
 			if err := checkDeactivationPin(s, nil); isCheckDeactivationPinErr(err) {
@@ -1011,16 +1011,16 @@ NOTE: Uninstalling will set DNS to values provided by DHCP.`,
 						if os.IsNotExist(err) {
 							continue
 						}
-						mainLog.Load().Warn().Err(err).Msgf("failed to remove file: %s", file)
+						MainLog.Load().Warn().Err(err).Msgf("failed to remove file: %s", file)
 					} else {
-						mainLog.Load().Debug().Msgf("file removed: %s", file)
+						MainLog.Load().Debug().Msgf("file removed: %s", file)
 					}
 				}
 				if err := selfDeleteExe(); err != nil {
-					mainLog.Load().Warn().Err(err).Msg("failed to delete ctrld binary")
+					MainLog.Load().Warn().Err(err).Msg("failed to delete ctrld binary")
 				} else {
 					if !supportedSelfDelete {
-						mainLog.Load().Debug().Msgf("file removed: %s", bin)
+						MainLog.Load().Debug().Msgf("file removed: %s", bin)
 					}
 				}
 			}
@@ -1081,7 +1081,7 @@ func initInterfacesCmd() *cobra.Command {
 				}
 				nss, err := currentStaticDNS(i)
 				if err != nil {
-					mainLog.Load().Warn().Err(err).Msg("failed to get DNS")
+					MainLog.Load().Warn().Err(err).Msg("failed to get DNS")
 				}
 				if len(nss) == 0 {
 					nss = currentDNS(i)
@@ -1126,28 +1126,28 @@ func initClientsCmd() *cobra.Command {
 
 			status, err := s.Status()
 			if errors.Is(err, service.ErrNotInstalled) {
-				mainLog.Load().Warn().Msg("service not installed")
+				MainLog.Load().Warn().Msg("service not installed")
 				return
 			}
 			if status == service.StatusStopped {
-				mainLog.Load().Warn().Msg("service is not running")
+				MainLog.Load().Warn().Msg("service is not running")
 				return
 			}
 
 			dir, err := socketDir()
 			if err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to find ctrld home dir")
+				MainLog.Load().Fatal().Err(err).Msg("failed to find ctrld home dir")
 			}
 			cc := newControlClient(filepath.Join(dir, ctrldControlUnixSock))
 			resp, err := cc.post(listClientsPath, nil)
 			if err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to get clients list")
+				MainLog.Load().Fatal().Err(err).Msg("failed to get clients list")
 			}
 			defer resp.Body.Close()
 
 			var clients []*clientinfo.Client
 			if err := json.NewDecoder(resp.Body).Decode(&clients); err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to decode clients list result")
+				MainLog.Load().Fatal().Err(err).Msg("failed to decode clients list result")
 			}
 			map2Slice := func(m map[string]struct{}) []string {
 				s := make([]string, 0, len(m))
@@ -1227,7 +1227,7 @@ func initUpgradeCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			bin, err := os.Executable()
 			if err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to get current ctrld binary path")
+				MainLog.Load().Fatal().Err(err).Msg("failed to get current ctrld binary path")
 			}
 			sc := &service.Config{}
 			*sc = *svcConfig
@@ -1237,7 +1237,7 @@ func initUpgradeCmd() *cobra.Command {
 			p := &Prog{router: router.New(&Cfg, runInCdMode())}
 			s, err := newService(p, sc)
 			if err != nil {
-				mainLog.Load().Error().Msg(err.Error())
+				MainLog.Load().Error().Msg(err.Error())
 				return
 			}
 			if iface == "" {
@@ -1245,7 +1245,7 @@ func initUpgradeCmd() *cobra.Command {
 			}
 			p.preRun()
 			if ir := runningIface(s); ir != nil {
-				p.runningIface = ir.Name
+				p.RunningIface = ir.Name
 				p.RequiredMultiNICsConfig = ir.All
 			}
 
@@ -1260,28 +1260,28 @@ func initUpgradeCmd() *cobra.Command {
 				switch channel {
 				case upgradeChannelProd, upgradeChannelDev: // ok
 				default:
-					mainLog.Load().Fatal().Msgf("uprade argument must be either %q or %q", upgradeChannelProd, upgradeChannelDev)
+					MainLog.Load().Fatal().Msgf("uprade argument must be either %q or %q", upgradeChannelProd, upgradeChannelDev)
 				}
 				baseUrl = upgradeChannel[channel]
 			}
 			dlUrl := upgradeUrl(baseUrl)
-			mainLog.Load().Debug().Msgf("Downloading binary: %s", dlUrl)
+			MainLog.Load().Debug().Msgf("Downloading binary: %s", dlUrl)
 
 			resp, err := getWithRetry(dlUrl, downloadServerIp)
 			if err != nil {
 
-				mainLog.Load().Fatal().Err(err).Msg("failed to download binary")
+				MainLog.Load().Fatal().Err(err).Msg("failed to download binary")
 			}
 			defer resp.Body.Close()
 			if resp.StatusCode != http.StatusOK {
-				mainLog.Load().Fatal().Msgf("could not download binary: %s", http.StatusText(resp.StatusCode))
+				MainLog.Load().Fatal().Msgf("could not download binary: %s", http.StatusText(resp.StatusCode))
 			}
-			mainLog.Load().Debug().Msg("Updating current binary")
+			MainLog.Load().Debug().Msg("Updating current binary")
 			if err := selfupdate.Apply(resp.Body, selfupdate.Options{OldSavePath: oldBin}); err != nil {
 				if rerr := selfupdate.RollbackError(err); rerr != nil {
-					mainLog.Load().Error().Err(rerr).Msg("could not rollback old binary")
+					MainLog.Load().Error().Err(rerr).Msg("could not rollback old binary")
 				}
-				mainLog.Load().Fatal().Err(err).Msg("failed to update current binary")
+				MainLog.Load().Fatal().Err(err).Msg("failed to update current binary")
 			}
 
 			doRestart := func() bool {
@@ -1293,7 +1293,7 @@ func initUpgradeCmd() *cobra.Command {
 					{func() error {
 						p.router.Cleanup()
 						// restore static DNS settings or DHCP
-						p.resetDNS(false, true)
+						p.ResetDNS(false, true)
 						return nil
 					}, false, "Cleanup"},
 					{func() error {
@@ -1311,7 +1311,7 @@ func initUpgradeCmd() *cobra.Command {
 						for {
 							select {
 							case <-ctx.Done():
-								mainLog.Load().Error().Msg("timeout while waiting for service to stop")
+								MainLog.Load().Error().Msg("timeout while waiting for service to stop")
 								break loop
 							default:
 							}
@@ -1337,7 +1337,7 @@ func initUpgradeCmd() *cobra.Command {
 				return false
 			}
 			if svcInstalled {
-				mainLog.Load().Debug().Msg("Restarting ctrld service using new binary")
+				MainLog.Load().Debug().Msg("Restarting ctrld service using new binary")
 			}
 			if doRestart() {
 				_ = os.Remove(oldBin)
@@ -1345,24 +1345,24 @@ func initUpgradeCmd() *cobra.Command {
 				ver := "unknown version"
 				out, err := exec.Command(bin, "--version").CombinedOutput()
 				if err != nil {
-					mainLog.Load().Warn().Err(err).Msg("Failed to get new binary version")
+					MainLog.Load().Warn().Err(err).Msg("Failed to get new binary version")
 				}
 				if after, found := strings.CutPrefix(string(out), "ctrld version "); found {
 					ver = after
 				}
-				mainLog.Load().Notice().Msgf("Upgrade successful - %s", ver)
+				MainLog.Load().Notice().Msgf("Upgrade successful - %s", ver)
 				return
 			}
 
-			mainLog.Load().Warn().Msgf("Upgrade failed, restoring previous binary: %s", oldBin)
+			MainLog.Load().Warn().Msgf("Upgrade failed, restoring previous binary: %s", oldBin)
 			if err := os.Remove(bin); err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to remove new binary")
+				MainLog.Load().Fatal().Err(err).Msg("failed to remove new binary")
 			}
 			if err := os.Rename(oldBin, bin); err != nil {
-				mainLog.Load().Fatal().Err(err).Msg("failed to restore old binary")
+				MainLog.Load().Fatal().Err(err).Msg("failed to restore old binary")
 			}
 			if doRestart() {
-				mainLog.Load().Notice().Msg("Restored previous binary successfully")
+				MainLog.Load().Notice().Msg("Restored previous binary successfully")
 				return
 			}
 		},

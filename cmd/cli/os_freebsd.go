@@ -18,7 +18,7 @@ import (
 func allocateIP(ip string) error {
 	cmd := exec.Command("ifconfig", "lo0", ip, "alias")
 	if err := cmd.Run(); err != nil {
-		mainLog.Load().Error().Err(err).Msg("allocateIP failed")
+		MainLog.Load().Error().Err(err).Msg("allocateIP failed")
 		return err
 	}
 	return nil
@@ -27,7 +27,7 @@ func allocateIP(ip string) error {
 func deAllocateIP(ip string) error {
 	cmd := exec.Command("ifconfig", "lo0", ip, "-alias")
 	if err := cmd.Run(); err != nil {
-		mainLog.Load().Error().Err(err).Msg("deAllocateIP failed")
+		MainLog.Load().Error().Err(err).Msg("deAllocateIP failed")
 		return err
 	}
 	return nil
@@ -42,7 +42,7 @@ func SetDnsIgnoreUnusableInterface(iface *net.Interface, nameservers []string) e
 func SetDNS(iface *net.Interface, nameservers []string) error {
 	r, err := dns.NewOSConfigurator(logf, &health.Tracker{}, &controlknobs.Knobs{}, iface.Name)
 	if err != nil {
-		mainLog.Load().Error().Err(err).Msg("failed to create DNS OS configurator")
+		MainLog.Load().Error().Err(err).Msg("failed to create DNS OS configurator")
 		return err
 	}
 
@@ -58,11 +58,11 @@ func SetDNS(iface *net.Interface, nameservers []string) error {
 	if sds, err := searchDomains(); err == nil {
 		osConfig.SearchDomains = sds
 	} else {
-		mainLog.Load().Debug().Err(err).Msg("failed to get search domains list")
+		MainLog.Load().Debug().Err(err).Msg("failed to get search domains list")
 	}
 
 	if err := r.SetDNS(osConfig); err != nil {
-		mainLog.Load().Error().Err(err).Msg("failed to set DNS")
+		MainLog.Load().Error().Err(err).Msg("failed to set DNS")
 		return err
 	}
 	return nil
@@ -70,18 +70,18 @@ func SetDNS(iface *net.Interface, nameservers []string) error {
 
 // resetDnsIgnoreUnusableInterface likes resetDNS, but return a nil error if the interface is not usable.
 func resetDnsIgnoreUnusableInterface(iface *net.Interface) error {
-	return resetDNS(iface)
+	return ResetDNS(iface)
 }
 
-func resetDNS(iface *net.Interface) error {
+func ResetDNS(iface *net.Interface) error {
 	r, err := dns.NewOSConfigurator(logf, &health.Tracker{}, &controlknobs.Knobs{}, iface.Name)
 	if err != nil {
-		mainLog.Load().Error().Err(err).Msg("failed to create DNS OS configurator")
+		MainLog.Load().Error().Err(err).Msg("failed to create DNS OS configurator")
 		return err
 	}
 
 	if err := r.Close(); err != nil {
-		mainLog.Load().Error().Err(err).Msg("failed to rollback DNS setting")
+		MainLog.Load().Error().Err(err).Msg("failed to rollback DNS setting")
 		return err
 	}
 	return nil
@@ -98,6 +98,6 @@ func currentDNS(_ *net.Interface) []string {
 }
 
 // currentStaticDNS returns the current static DNS settings of given interface.
-func currentStaticDNS(iface *net.Interface) ([]string, error) {
+func CurrentStaticDNS(iface *net.Interface) ([]string, error) {
 	return currentDNS(iface), nil
 }

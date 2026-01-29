@@ -43,20 +43,20 @@ func SetDNS(iface *net.Interface, nameservers []string) error {
 		// If there's a Dns server running, that means we are on AD with Dns feature enabled.
 		// Configuring the Dns server to forward queries to ctrld instead.
 		if hasLocalDnsServerRunning() {
-			mainLog.Load().Debug().Msg("Local DNS server detected, configuring forwarders")
+			MainLog.Load().Debug().Msg("Local DNS server detected, configuring forwarders")
 
 			file := absHomeDir(windowsForwardersFilename)
-			mainLog.Load().Debug().Msgf("Using forwarders file: %s", file)
+			MainLog.Load().Debug().Msgf("Using forwarders file: %s", file)
 
 			oldForwardersContent, err := os.ReadFile(file)
 			if err != nil {
-				mainLog.Load().Debug().Err(err).Msg("Could not read existing forwarders file")
+				MainLog.Load().Debug().Err(err).Msg("Could not read existing forwarders file")
 			} else {
-				mainLog.Load().Debug().Msgf("Existing forwarders content: %s", string(oldForwardersContent))
+				MainLog.Load().Debug().Msgf("Existing forwarders content: %s", string(oldForwardersContent))
 			}
 
 			hasLocalIPv6Listener := NeedLocalIPv6Listener()
-			mainLog.Load().Debug().Bool("has_ipv6_listener", hasLocalIPv6Listener).Msg("IPv6 listener status")
+			MainLog.Load().Debug().Bool("has_ipv6_listener", hasLocalIPv6Listener).Msg("IPv6 listener status")
 
 			forwarders := slices.DeleteFunc(slices.Clone(nameservers), func(s string) bool {
 				if !hasLocalIPv6Listener {
@@ -64,21 +64,21 @@ func SetDNS(iface *net.Interface, nameservers []string) error {
 				}
 				return s == "::1"
 			})
-			mainLog.Load().Debug().Strs("forwarders", forwarders).Msg("Filtered forwarders list")
+			MainLog.Load().Debug().Strs("forwarders", forwarders).Msg("Filtered forwarders list")
 
 			if err := os.WriteFile(file, []byte(strings.Join(forwarders, ",")), 0600); err != nil {
-				mainLog.Load().Warn().Err(err).Msg("could not save forwarders settings")
+				MainLog.Load().Warn().Err(err).Msg("could not save forwarders settings")
 			} else {
-				mainLog.Load().Debug().Msg("Successfully wrote new forwarders file")
+				MainLog.Load().Debug().Msg("Successfully wrote new forwarders file")
 			}
 
 			oldForwarders := strings.Split(string(oldForwardersContent), ",")
-			mainLog.Load().Debug().Strs("old_forwarders", oldForwarders).Msg("Previous forwarders")
+			MainLog.Load().Debug().Strs("old_forwarders", oldForwarders).Msg("Previous forwarders")
 
 			if err := addDnsServerForwarders(forwarders, oldForwarders); err != nil {
-				mainLog.Load().Warn().Err(err).Msg("could not set forwarders settings")
+				MainLog.Load().Warn().Err(err).Msg("could not set forwarders settings")
 			} else {
-				mainLog.Load().Debug().Msg("Successfully configured DNS server forwarders")
+				MainLog.Load().Debug().Msg("Successfully configured DNS server forwarders")
 			}
 		}
 	})
@@ -122,23 +122,23 @@ func SetDNS(iface *net.Interface, nameservers []string) error {
 
 // resetDnsIgnoreUnusableInterface likes resetDNS, but return a nil error if the interface is not usable.
 func resetDnsIgnoreUnusableInterface(iface *net.Interface) error {
-	return resetDNS(iface)
+	return ResetDNS(iface)
 }
 
 // TODO(cuonglm): should we use system API?
-func resetDNS(iface *net.Interface) error {
+func ResetDNS(iface *net.Interface) error {
 	resetDNSOnce.Do(func() {
 		// See corresponding comment in setDNS.
 		if hasLocalDnsServerRunning() {
 			file := absHomeDir(windowsForwardersFilename)
 			content, err := os.ReadFile(file)
 			if err != nil {
-				mainLog.Load().Error().Err(err).Msg("could not read forwarders settings")
+				MainLog.Load().Error().Err(err).Msg("could not read forwarders settings")
 				return
 			}
 			nameservers := strings.Split(string(content), ",")
 			if err := removeDnsServerForwarders(nameservers); err != nil {
-				mainLog.Load().Error().Err(err).Msg("could not remove forwarders settings")
+				MainLog.Load().Error().Err(err).Msg("could not remove forwarders settings")
 				return
 			}
 		}
@@ -161,7 +161,7 @@ func resetDNS(iface *net.Interface) error {
 // restoreDNS restores the DNS settings of the given interface.
 // this should only be executed upon turning off the ctrld service.
 func restoreDNS(iface *net.Interface) (err error) {
-	if nss := savedStaticNameservers(iface); len(nss) > 0 {
+	if nss := SavedStaticNameservers(iface); len(nss) > 0 {
 		v4ns := make([]string, 0, 2)
 		v6ns := make([]string, 0, 2)
 		for _, ns := range nss {
@@ -178,24 +178,24 @@ func restoreDNS(iface *net.Interface) (err error) {
 		}
 
 		if len(v4ns) > 0 {
-			mainLog.Load().Debug().Msgf("restoring IPv4 static DNS for interface %q: %v", iface.Name, v4ns)
+			MainLog.Load().Debug().Msgf("restoring IPv4 static DNS for interface %q: %v", iface.Name, v4ns)
 			if err := SetDNS(iface, v4ns); err != nil {
 				return fmt.Errorf("restoreDNS (IPv4): %w", err)
 			}
 		} else {
-			mainLog.Load().Debug().Msgf("restoring IPv4 DHCP for interface %q", iface.Name)
+			MainLog.Load().Debug().Msgf("restoring IPv4 DHCP for interface %q", iface.Name)
 			if err := luid.SetDNS(windows.AF_INET, nil, nil); err != nil {
 				return fmt.Errorf("restoreDNS (IPv4 clear): %w", err)
 			}
 		}
 
 		if len(v6ns) > 0 {
-			mainLog.Load().Debug().Msgf("restoring IPv6 static DNS for interface %q: %v", iface.Name, v6ns)
+			MainLog.Load().Debug().Msgf("restoring IPv6 static DNS for interface %q: %v", iface.Name, v6ns)
 			if err := SetDNS(iface, v6ns); err != nil {
 				return fmt.Errorf("restoreDNS (IPv6): %w", err)
 			}
 		} else {
-			mainLog.Load().Debug().Msgf("restoring IPv6 DHCP for interface %q", iface.Name)
+			MainLog.Load().Debug().Msgf("restoring IPv6 DHCP for interface %q", iface.Name)
 			if err := luid.SetDNS(windows.AF_INET6, nil, nil); err != nil {
 				return fmt.Errorf("restoreDNS (IPv6 clear): %w", err)
 			}
@@ -207,12 +207,12 @@ func restoreDNS(iface *net.Interface) (err error) {
 func currentDNS(iface *net.Interface) []string {
 	luid, err := winipcfg.LUIDFromIndex(uint32(iface.Index))
 	if err != nil {
-		mainLog.Load().Error().Err(err).Msg("failed to get interface LUID")
+		MainLog.Load().Error().Err(err).Msg("failed to get interface LUID")
 		return nil
 	}
 	nameservers, err := luid.DNS()
 	if err != nil {
-		mainLog.Load().Error().Err(err).Msg("failed to get interface DNS")
+		MainLog.Load().Error().Err(err).Msg("failed to get interface DNS")
 		return nil
 	}
 	ns := make([]string, 0, len(nameservers))
@@ -224,7 +224,7 @@ func currentDNS(iface *net.Interface) []string {
 
 // currentStaticDNS checks both the IPv4 and IPv6 paths for static DNS values using keys
 // like "NameServer" and "ProfileNameServer".
-func currentStaticDNS(iface *net.Interface) ([]string, error) {
+func CurrentStaticDNS(iface *net.Interface) ([]string, error) {
 	luid, err := winipcfg.LUIDFromIndex(uint32(iface.Index))
 	if err != nil {
 		return nil, fmt.Errorf("fallback winipcfg.LUIDFromIndex: %w", err)
@@ -240,7 +240,7 @@ func currentStaticDNS(iface *net.Interface) ([]string, error) {
 		interfaceKeyPath := path + guid.String()
 		k, err := registry.OpenKey(registry.LOCAL_MACHINE, interfaceKeyPath, registry.QUERY_VALUE)
 		if err != nil {
-			mainLog.Load().Debug().Err(err).Msgf("failed to open registry key %q for interface %q; trying next key", interfaceKeyPath, iface.Name)
+			MainLog.Load().Debug().Err(err).Msgf("failed to open registry key %q for interface %q; trying next key", interfaceKeyPath, iface.Name)
 			continue
 		}
 		func() {
@@ -248,11 +248,11 @@ func currentStaticDNS(iface *net.Interface) ([]string, error) {
 			for _, keyName := range []string{"NameServer", "ProfileNameServer"} {
 				value, _, err := k.GetStringValue(keyName)
 				if err != nil && !errors.Is(err, registry.ErrNotExist) {
-					mainLog.Load().Debug().Err(err).Msgf("error reading %s registry key", keyName)
+					MainLog.Load().Debug().Err(err).Msgf("error reading %s registry key", keyName)
 					continue
 				}
 				if len(value) > 0 {
-					mainLog.Load().Debug().Msgf("found static DNS for interface %q: %s", iface.Name, value)
+					MainLog.Load().Debug().Msgf("found static DNS for interface %q: %s", iface.Name, value)
 					parsed := parseDNSServers(value)
 					for _, pns := range parsed {
 						if !slices.Contains(ns, pns) {
@@ -264,7 +264,7 @@ func currentStaticDNS(iface *net.Interface) ([]string, error) {
 		}()
 	}
 	if len(ns) == 0 {
-		mainLog.Load().Debug().Msgf("no static DNS values found for interface %q", iface.Name)
+		MainLog.Load().Debug().Msgf("no static DNS values found for interface %q", iface.Name)
 	}
 	return ns, nil
 }

@@ -12,7 +12,7 @@ func generateNextDNSConfig(uid string) {
 	if uid == "" {
 		return
 	}
-	mainLog.Load().Info().Msg("generating ctrld config for NextDNS resolver")
+	MainLog.Load().Info().Msg("generating ctrld config for NextDNS resolver")
 	Cfg = ctrld.Config{
 		Listener: map[string]*ctrld.ListenerConfig{
 			"0": {

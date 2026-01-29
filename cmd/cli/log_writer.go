@@ -108,7 +108,7 @@ func (p *Prog) initInternalLogging(writers []io.Writer) {
 		return
 	}
 	p.initInternalLogWriterOnce.Do(func() {
-		mainLog.Load().Notice().Msg("internal logging enabled")
+		MainLog.Load().Notice().Msg("internal logging enabled")
 		p.internalLogWriter = newLogWriter()
 		p.internalLogSent = time.Now().Add(-logWriterSentInterval)
 		p.internalWarnLogWriter = newSmallLogWriter()
@@ -136,8 +136,8 @@ func (p *Prog) initInternalLogging(writers []io.Writer) {
 		Level:  zerolog.WarnLevel,
 	})
 	multi := zerolog.MultiLevelWriter(writers...)
-	l := mainLog.Load().Output(multi).With().Logger()
-	mainLog.Store(&l)
+	l := MainLog.Load().Output(multi).With().Logger()
+	MainLog.Store(&l)
 	ctrld.ProxyLogger.Store(&l)
 }
 

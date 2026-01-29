@@ -153,7 +153,7 @@ func (s *systemd) Start() error {
 		if out, err := exec.Command("systemctl", "daemon-reload").CombinedOutput(); err != nil {
 			return fmt.Errorf("systemctl daemon-reload failed: %w\n%s", err, string(out))
 		}
-		mainLog.Load().Debug().Msg("set KillMode=process successfully")
+		MainLog.Load().Debug().Msg("set KillMode=process successfully")
 	}
 	return s.Service.Start()
 }
@@ -163,7 +163,7 @@ func (s *systemd) Start() error {
 func ensureSystemdKillMode(r io.Reader) (opts []*unit.UnitOption, change bool) {
 	opts, err := unit.DeserializeOptions(r)
 	if err != nil {
-		mainLog.Load().Error().Err(err).Msg("failed to deserialize options")
+		MainLog.Load().Error().Err(err).Msg("failed to deserialize options")
 		return
 	}
 	change = true
@@ -218,16 +218,16 @@ type task struct {
 
 func doTasks(tasks []task) bool {
 	for _, task := range tasks {
-		mainLog.Load().Debug().Msgf("Running task %s", task.Name)
+		MainLog.Load().Debug().Msgf("Running task %s", task.Name)
 		if err := task.f(); err != nil {
 			if task.abortOnError {
-				mainLog.Load().Error().Msgf("error running task %s: %v", task.Name, err)
+				MainLog.Load().Error().Msgf("error running task %s: %v", task.Name, err)
 				return false
 			}
 			// if this is darwin stop command, dont print debug
 			// since launchctl complains on every start
 			if runtime.GOOS != "darwin" || task.Name != "Stop" {
-				mainLog.Load().Debug().Msgf("error running task %s: %v", task.Name, err)
+				MainLog.Load().Debug().Msgf("error running task %s: %v", task.Name, err)
 			}
 		}
 	}
@@ -237,11 +237,11 @@ func doTasks(tasks []task) bool {
 func checkHasElevatedPrivilege() {
 	ok, err := hasElevatedPrivilege()
 	if err != nil {
-		mainLog.Load().Error().Msgf("could not detect user privilege: %v", err)
+		MainLog.Load().Error().Msgf("could not detect user privilege: %v", err)
 		return
 	}
 	if !ok {
-		mainLog.Load().Error().Msg("Please relaunch process with admin/root privilege.")
+		MainLog.Load().Error().Msg("Please relaunch process with admin/root privilege.")
 		os.Exit(1)
 	}
 }

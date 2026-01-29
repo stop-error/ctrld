@@ -68,8 +68,8 @@ func doWithRetry(req *http.Request, maxRetries int, ip string) (*http.Response, 
 			return resp, nil
 		}
 		if ipReq != nil {
-			mainLog.Load().Warn().Err(err).Msgf("dial to %q failed", req.Host)
-			mainLog.Load().Warn().Msgf("fallback to direct IP to download prod version: %q", ip)
+			MainLog.Load().Warn().Err(err).Msgf("dial to %q failed", req.Host)
+			MainLog.Load().Warn().Msgf("fallback to direct IP to download prod version: %q", ip)
 			resp, err = client.Do(ipReq)
 			if err == nil {
 				return resp, nil
@@ -77,7 +77,7 @@ func doWithRetry(req *http.Request, maxRetries int, ip string) (*http.Response, 
 		}
 
 		lastErr = err
-		mainLog.Load().Debug().Err(err).
+		MainLog.Load().Debug().Err(err).
 			Str("method", req.Method).
 			Str("url", req.URL.String()).
 			Msgf("HTTP request attempt %d/%d failed", attempt+1, maxRetries)

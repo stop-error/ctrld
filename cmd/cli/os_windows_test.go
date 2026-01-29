@@ -17,7 +17,7 @@ func Test_currentStaticDNS(t *testing.T) {
 		t.Fatal(err)
 	}
 	start := time.Now()
-	staticDns, err := currentStaticDNS(iface)
+	staticDns, err := CurrentStaticDNS(iface)
 	if err != nil {
 		t.Fatal(err)
 	}

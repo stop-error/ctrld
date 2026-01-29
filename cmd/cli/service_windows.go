@@ -177,27 +177,27 @@ func isRunningOnDomainControllerWindows() (bool, int) {
 	q := query.NewWmiQuery("Win32_ComputerSystem")
 	instances, err := instance.GetWmiInstancesFromHost(whost, string(constant.CimV2), q)
 	if err != nil {
-		mainLog.Load().Debug().Err(err).Msg("WMI query failed")
+		MainLog.Load().Debug().Err(err).Msg("WMI query failed")
 		return false, 0
 	}
 	if instances == nil {
-		mainLog.Load().Debug().Msg("WMI query returned nil instances")
+		MainLog.Load().Debug().Msg("WMI query returned nil instances")
 		return false, 0
 	}
 	defer instances.Close()
 
 	if len(instances) == 0 {
-		mainLog.Load().Debug().Msg("no rows returned from Win32_ComputerSystem")
+		MainLog.Load().Debug().Msg("no rows returned from Win32_ComputerSystem")
 		return false, 0
 	}
 
 	val, err := instances[0].GetProperty("DomainRole")
 	if err != nil {
-		mainLog.Load().Debug().Err(err).Msg("failed to get DomainRole property")
+		MainLog.Load().Debug().Err(err).Msg("failed to get DomainRole property")
 		return false, 0
 	}
 	if val == nil {
-		mainLog.Load().Debug().Msg("DomainRole property is nil")
+		MainLog.Load().Debug().Msg("DomainRole property is nil")
 		return false, 0
 	}
 
@@ -208,7 +208,7 @@ func isRunningOnDomainControllerWindows() (bool, int) {
 		// "4", "5", etc.
 		parsed, parseErr := strconv.Atoi(v)
 		if parseErr != nil {
-			mainLog.Load().Debug().Err(parseErr).Msgf("failed to parse DomainRole value %q", v)
+			MainLog.Load().Debug().Err(parseErr).Msgf("failed to parse DomainRole value %q", v)
 			return false, 0
 		}
 		roleInt = parsed
@@ -217,7 +217,7 @@ func isRunningOnDomainControllerWindows() (bool, int) {
 	case uint8, uint16, uint32, uint64:
 		roleInt = int(reflect.ValueOf(v).Uint())
 	default:
-		mainLog.Load().Debug().Msgf("unexpected DomainRole type: %T value=%v", v, v)
+		MainLog.Load().Debug().Msgf("unexpected DomainRole type: %T value=%v", v, v)
 		return false, 0
 	}
 

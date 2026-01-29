@@ -44,20 +44,20 @@ func validInterfaces() []string {
 		defer instances.Close()
 	}
 	if err != nil {
-		mainLog.Load().Warn().Err(err).Msg("failed to get wmi network adapter")
+		MainLog.Load().Warn().Err(err).Msg("failed to get wmi network adapter")
 		return nil
 	}
 	var adapters []string
 	for _, i := range instances {
 		adapter, err := netadapter.NewNetworkAdapter(i)
 		if err != nil {
-			mainLog.Load().Warn().Err(err).Msg("failed to get network adapter")
+			MainLog.Load().Warn().Err(err).Msg("failed to get network adapter")
 			continue
 		}
 
 		name, err := adapter.GetPropertyName()
 		if err != nil {
-			mainLog.Load().Warn().Err(err).Msg("failed to get interface name")
+			MainLog.Load().Warn().Err(err).Msg("failed to get interface name")
 			continue
 		}
 
@@ -67,11 +67,11 @@ func validInterfaces() []string {
 		// if this is a physical adapter or FALSE if this is not a physical adapter."
 		physical, err := adapter.GetPropertyConnectorPresent()
 		if err != nil {
-			mainLog.Load().Debug().Str("method", "validInterfaces").Str("interface", name).Msg("failed to get network adapter connector present property")
+			MainLog.Load().Debug().Str("method", "validInterfaces").Str("interface", name).Msg("failed to get network adapter connector present property")
 			continue
 		}
 		if !physical {
-			mainLog.Load().Debug().Str("method", "validInterfaces").Str("interface", name).Msg("skipping non-physical adapter")
+			MainLog.Load().Debug().Str("method", "validInterfaces").Str("interface", name).Msg("skipping non-physical adapter")
 			continue
 		}
 
@@ -79,11 +79,11 @@ func validInterfaces() []string {
 		// because some interfaces are not physical but have a connector.
 		hardware, err := adapter.GetPropertyHardwareInterface()
 		if err != nil {
-			mainLog.Load().Debug().Str("method", "validInterfaces").Str("interface", name).Msg("failed to get network adapter hardware interface property")
+			MainLog.Load().Debug().Str("method", "validInterfaces").Str("interface", name).Msg("failed to get network adapter hardware interface property")
 			continue
 		}
 		if !hardware {
-			mainLog.Load().Debug().Str("method", "validInterfaces").Str("interface", name).Msg("skipping non-hardware interface")
+			MainLog.Load().Debug().Str("method", "validInterfaces").Str("interface", name).Msg("skipping non-hardware interface")
 			continue
 		}
 

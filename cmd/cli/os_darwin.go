@@ -16,7 +16,7 @@ import (
 func allocateIP(ip string) error {
 	cmd := exec.Command("ifconfig", "lo0", "alias", ip, "up")
 	if err := cmd.Run(); err != nil {
-		mainLog.Load().Error().Err(err).Msg("allocateIP failed")
+		MainLog.Load().Error().Err(err).Msg("allocateIP failed")
 		return err
 	}
 	return nil
@@ -25,7 +25,7 @@ func allocateIP(ip string) error {
 func deAllocateIP(ip string) error {
 	cmd := exec.Command("ifconfig", "lo0", "-alias", ip)
 	if err := cmd.Run(); err != nil {
-		mainLog.Load().Error().Err(err).Msg("deAllocateIP failed")
+		MainLog.Load().Error().Err(err).Msg("deAllocateIP failed")
 		return err
 	}
 	return nil

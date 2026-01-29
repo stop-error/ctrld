@@ -33,7 +33,7 @@ const resolvConfBackupFailedMsg = "open /etc/resolv.pre-ctrld-backup.conf: read-
 func allocateIP(ip string) error {
 	cmd := exec.Command("ip", "a", "add", ip+"/24", "dev", "lo")
 	if out, err := cmd.CombinedOutput(); err != nil {
-		mainLog.Load().Error().Err(err).Msgf("allocateIP failed: %s", string(out))
+		MainLog.Load().Error().Err(err).Msgf("allocateIP failed: %s", string(out))
 		return err
 	}
 	return nil
@@ -42,7 +42,7 @@ func allocateIP(ip string) error {
 func deAllocateIP(ip string) error {
 	cmd := exec.Command("ip", "a", "del", ip+"/24", "dev", "lo")
 	if err := cmd.Run(); err != nil {
-		mainLog.Load().Error().Err(err).Msg("deAllocateIP failed")
+		MainLog.Load().Error().Err(err).Msg("deAllocateIP failed")
 		return err
 	}
 	return nil
@@ -58,7 +58,7 @@ func SetDnsIgnoreUnusableInterface(iface *net.Interface, nameservers []string) e
 func SetDNS(iface *net.Interface, nameservers []string) error {
 	r, err := dns.NewOSConfigurator(logf, &health.Tracker{}, &controlknobs.Knobs{}, iface.Name)
 	if err != nil {
-		mainLog.Load().Error().Err(err).Msg("failed to create DNS OS configurator")
+		MainLog.Load().Error().Err(err).Msg("failed to create DNS OS configurator")
 		return err
 	}
 
@@ -74,13 +74,13 @@ func SetDNS(iface *net.Interface, nameservers []string) error {
 	if sds, err := searchDomains(); err == nil {
 		osConfig.SearchDomains = sds
 	} else {
-		mainLog.Load().Debug().Err(err).Msg("failed to get search domains list")
+		MainLog.Load().Debug().Err(err).Msg("failed to get search domains list")
 	}
 	trySystemdResolve := false
 	if err := r.SetDNS(osConfig); err != nil {
 		if strings.Contains(err.Error(), "Rejected send message") &&
 			strings.Contains(err.Error(), "org.freedesktop.network1.Manager") {
-			mainLog.Load().Warn().Msg("Interfaces are managed by systemd-networkd, switch to systemd-resolve for setting DNS")
+			MainLog.Load().Warn().Msg("Interfaces are managed by systemd-networkd, switch to systemd-resolve for setting DNS")
 			trySystemdResolve = true
 			goto systemdResolve
 		}
@@ -115,17 +115,17 @@ systemdResolve:
 			}
 			time.Sleep(time.Second)
 		}
-		mainLog.Load().Debug().Msg("DNS was not set for some reason")
+		MainLog.Load().Debug().Msg("DNS was not set for some reason")
 	}
 	return nil
 }
 
 // resetDnsIgnoreUnusableInterface likes resetDNS, but return a nil error if the interface is not usable.
 func resetDnsIgnoreUnusableInterface(iface *net.Interface) error {
-	return resetDNS(iface)
+	return ResetDNS(iface)
 }
 
-func resetDNS(iface *net.Interface) (err error) {
+func ResetDNS(iface *net.Interface) (err error) {
 	defer func() {
 		if err == nil {
 			return
@@ -137,7 +137,7 @@ func resetDNS(iface *net.Interface) (err error) {
 		if r, oerr := dns.NewOSConfigurator(logf, &health.Tracker{}, &controlknobs.Knobs{}, iface.Name); oerr == nil {
 			_ = r.SetDNS(dns.OSConfig{})
 			if err := r.Close(); err != nil {
-				mainLog.Load().Error().Err(err).Msg("failed to rollback DNS setting")
+				MainLog.Load().Error().Err(err).Msg("failed to rollback DNS setting")
 				return
 			}
 			err = nil
@@ -165,18 +165,18 @@ func resetDNS(iface *net.Interface) (err error) {
 	}
 
 	// TODO(cuonglm): handle DHCPv6 properly.
-	mainLog.Load().Debug().Msg("checking for IPv6 availability")
+	MainLog.Load().Debug().Msg("checking for IPv6 availability")
 	if ctrldnet.IPv6Available(ctx) {
 		c := client6.NewClient()
 		conversation, err := c.Exchange(iface.Name)
 		if err != nil && !errAddrInUse(err) {
-			mainLog.Load().Debug().Err(err).Msg("could not exchange DHCPv6")
+			MainLog.Load().Debug().Err(err).Msg("could not exchange DHCPv6")
 		}
 		for _, packet := range conversation {
 			if packet.Type() == dhcpv6.MessageTypeReply {
 				msg, err := packet.GetInnerMessage()
 				if err != nil {
-					mainLog.Load().Debug().Err(err).Msg("could not get inner DHCPv6 message")
+					MainLog.Load().Debug().Err(err).Msg("could not get inner DHCPv6 message")
 					return nil
 				}
 				nameservers := msg.Options.DNS()
@@ -186,7 +186,7 @@ func resetDNS(iface *net.Interface) (err error) {
 			}
 		}
 	} else {
-		mainLog.Load().Debug().Msg("IPv6 is not available")
+		MainLog.Load().Debug().Msg("IPv6 is not available")
 	}
 
 	return ignoringEINTR(func() error {
@@ -211,7 +211,7 @@ func currentDNS(iface *net.Interface) []string {
 }
 
 // currentStaticDNS returns the current static DNS settings of given interface.
-func currentStaticDNS(iface *net.Interface) ([]string, error) {
+func CurrentStaticDNS(iface *net.Interface) ([]string, error) {
 	return currentDNS(iface), nil
 }
 

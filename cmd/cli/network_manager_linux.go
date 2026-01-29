@@ -33,40 +33,40 @@ func setupNetworkManager() error {
 		return nil
 	}
 	if content, _ := os.ReadFile(nmCtrldConfContent); string(content) == nmCtrldConfContent {
-		mainLog.Load().Debug().Msg("NetworkManager already setup, nothing to do")
+		MainLog.Load().Debug().Msg("NetworkManager already setup, nothing to do")
 		return nil
 	}
 	err := os.WriteFile(networkManagerCtrldConfFile, []byte(nmCtrldConfContent), os.FileMode(0644))
 	if os.IsNotExist(err) {
-		mainLog.Load().Debug().Msg("NetworkManager is not available")
+		MainLog.Load().Debug().Msg("NetworkManager is not available")
 		return nil
 	}
 	if err != nil {
-		mainLog.Load().Debug().Err(err).Msg("could not write NetworkManager ctrld config file")
+		MainLog.Load().Debug().Err(err).Msg("could not write NetworkManager ctrld config file")
 		return err
 	}
 
 	reloadNetworkManager()
-	mainLog.Load().Debug().Msg("setup NetworkManager done")
+	MainLog.Load().Debug().Msg("setup NetworkManager done")
 	return nil
 }
 
-func restoreNetworkManager() error {
+func RestoreNetworkManager() error {
 	if !hasNetworkManager() {
 		return nil
 	}
 	err := os.Remove(networkManagerCtrldConfFile)
 	if os.IsNotExist(err) {
-		mainLog.Load().Debug().Msg("NetworkManager is not available")
+		MainLog.Load().Debug().Msg("NetworkManager is not available")
 		return nil
 	}
 	if err != nil {
-		mainLog.Load().Debug().Err(err).Msg("could not remove NetworkManager ctrld config file")
+		MainLog.Load().Debug().Err(err).Msg("could not remove NetworkManager ctrld config file")
 		return err
 	}
 
 	reloadNetworkManager()
-	mainLog.Load().Debug().Msg("restore NetworkManager done")
+	MainLog.Load().Debug().Msg("restore NetworkManager done")
 	return nil
 }
 
@@ -75,14 +75,14 @@ func reloadNetworkManager() {
 	defer cancel()
 	conn, err := dbus.NewSystemConnectionContext(ctx)
 	if err != nil {
-		mainLog.Load().Error().Err(err).Msg("could not create new system connection")
+		MainLog.Load().Error().Err(err).Msg("could not create new system connection")
 		return
 	}
 	defer conn.Close()
 
 	waitCh := make(chan string)
 	if _, err := conn.ReloadUnitContext(ctx, nmSystemdUnitName, "ignore-dependencies", waitCh); err != nil {
-		mainLog.Load().Debug().Err(err).Msg("could not reload NetworkManager")
+		MainLog.Load().Debug().Err(err).Msg("could not reload NetworkManager")
 		return
 	}
 	<-waitCh

@@ -88,7 +88,7 @@ func (p *Prog) serveDNS(listenerNum string) error {
 	listenerConfig := p.cfg.Listener[listenerNum]
 	// make sure ip is allocated
 	if allocErr := p.allocateIP(listenerConfig.IP); allocErr != nil {
-		mainLog.Load().Error().Err(allocErr).Str("ip", listenerConfig.IP).Msg("serveUDP: failed to allocate listen ip")
+		MainLog.Load().Error().Err(allocErr).Str("ip", listenerConfig.IP).Msg("serveUDP: failed to allocate listen ip")
 		return allocErr
 	}
 
@@ -105,7 +105,7 @@ func (p *Prog) serveDNS(listenerNum string) error {
 		reqId := requestID()
 		ctx := context.WithValue(context.Background(), ctrld.ReqIdCtxKey{}, reqId)
 		if !listenerConfig.AllowWanClients && isWanClient(w.RemoteAddr()) {
-			ctrld.Log(ctx, mainLog.Load().Debug(), "query refused, listener does not allow WAN clients: %s", w.RemoteAddr().String())
+			ctrld.Log(ctx, MainLog.Load().Debug(), "query refused, listener does not allow WAN clients: %s", w.RemoteAddr().String())
 			answer := new(dns.Msg)
 			answer.SetRcode(m, dns.RcodeRefused)
 			_ = w.WriteMsg(answer)
@@ -128,7 +128,7 @@ func (p *Prog) serveDNS(listenerNum string) error {
 
 		if _, ok := p.cacheFlushDomainsMap[domain]; ok && p.cache != nil {
 			p.cache.Purge()
-			ctrld.Log(ctx, mainLog.Load().Debug(), "received query %q, local cache is purged", domain)
+			ctrld.Log(ctx, MainLog.Load().Debug(), "received query %q, local cache is purged", domain)
 		}
 		remoteIP, _, _ := net.SplitHostPort(w.RemoteAddr().String())
 		ci := p.getClientInfo(remoteIP, m)
@@ -137,7 +137,7 @@ func (p *Prog) serveDNS(listenerNum string) error {
 		remoteAddr := spoofRemoteAddr(w.RemoteAddr(), ci)
 		fmtSrcToDest := fmtRemoteToLocal(listenerNum, ci.Hostname, remoteAddr.String())
 		t := time.Now()
-		ctrld.Log(ctx, mainLog.Load().Info(), "QUERY: %s: %s %s", fmtSrcToDest, dns.TypeToString[q.Qtype], domain)
+		ctrld.Log(ctx, MainLog.Load().Info(), "QUERY: %s: %s %s", fmtSrcToDest, dns.TypeToString[q.Qtype], domain)
 		ur := p.upstreamFor(ctx, listenerNum, listenerConfig, remoteAddr, ci.Mac, domain)
 
 		labelValues := make([]string, 0, len(statsQueriesCountLabels))
@@ -148,7 +148,7 @@ func (p *Prog) serveDNS(listenerNum string) error {
 
 		var answer *dns.Msg
 		if !ur.matched && listenerConfig.Restricted {
-			ctrld.Log(ctx, mainLog.Load().Info(), "query refused, %s does not match any network policy", remoteAddr.String())
+			ctrld.Log(ctx, MainLog.Load().Info(), "query refused, %s does not match any network policy", remoteAddr.String())
 			answer = new(dns.Msg)
 			answer.SetRcode(m, dns.RcodeRefused)
 			labelValues = append(labelValues, "") // no upstream
@@ -167,7 +167,7 @@ func (p *Prog) serveDNS(listenerNum string) error {
 
 			answer = pr.answer
 			rtt := time.Since(t)
-			ctrld.Log(ctx, mainLog.Load().Debug(), "received response of %d bytes in %s", answer.Len(), rtt)
+			ctrld.Log(ctx, MainLog.Load().Debug(), "received response of %d bytes in %s", answer.Len(), rtt)
 			upstream := pr.upstream
 			switch {
 			case pr.cached:
@@ -185,7 +185,7 @@ func (p *Prog) serveDNS(listenerNum string) error {
 			p.forceFetchingAPI(domain)
 		}()
 		if err := w.WriteMsg(answer); err != nil {
-			ctrld.Log(ctx, mainLog.Load().Error().Err(err), "serveDNS: failed to send DNS response to client")
+			ctrld.Log(ctx, MainLog.Load().Error().Err(err), "serveDNS: failed to send DNS response to client")
 		}
 	})
 
@@ -202,7 +202,7 @@ func (p *Prog) serveDNS(listenerNum string) error {
 				case err := <-errCh:
 					// Local ipv6 listener should not terminate ctrld.
 					// It's a workaround for a quirk on Windows.
-					mainLog.Load().Warn().Err(err).Msg("local ipv6 listener failed")
+					MainLog.Load().Warn().Err(err).Msg("local ipv6 listener failed")
 				}
 				return nil
 			})
@@ -222,7 +222,7 @@ func (p *Prog) serveDNS(listenerNum string) error {
 						case err := <-errCh:
 							// RFC1918 listener should not terminate ctrld.
 							// It's a workaround for a quirk on system with systemd-resolved.
-							mainLog.Load().Warn().Err(err).Msgf("could not listen on %s: %s", proto, listenAddr)
+							MainLog.Load().Warn().Err(err).Msgf("could not listen on %s: %s", proto, listenAddr)
 						}
 					}()
 				}
@@ -364,8 +364,8 @@ func (p *Prog) proxyPrivatePtrLookup(ctx context.Context, msg *dns.Msg) *dns.Msg
 			},
 			Ptr: dns.Fqdn(name),
 		}}
-		ctrld.Log(ctx, mainLog.Load().Info(), "private PTR lookup, using client info table")
-		ctrld.Log(ctx, mainLog.Load().Debug(), "client info: %v", ctrld.ClientInfo{
+		ctrld.Log(ctx, MainLog.Load().Info(), "private PTR lookup, using client info table")
+		ctrld.Log(ctx, MainLog.Load().Debug(), "client info: %v", ctrld.ClientInfo{
 			Mac:      p.ciTable.LookupMac(ip.String()),
 			IP:       ip.String(),
 			Hostname: name,
@@ -409,8 +409,8 @@ func (p *Prog) proxyLanHostnameQuery(ctx context.Context, msg *dns.Msg) *dns.Msg
 				AAAA: ip.AsSlice(),
 			}}
 		}
-		ctrld.Log(ctx, mainLog.Load().Info(), "lan hostname lookup, using client info table")
-		ctrld.Log(ctx, mainLog.Load().Debug(), "client info: %v", ctrld.ClientInfo{
+		ctrld.Log(ctx, MainLog.Load().Info(), "lan hostname lookup, using client info table")
+		ctrld.Log(ctx, MainLog.Load().Debug(), "client info: %v", ctrld.ClientInfo{
 			Mac:      p.ciTable.LookupMac(ip.String()),
 			IP:       ip.String(),
 			Hostname: hostname,
@@ -434,7 +434,7 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 		// running and listening on local addresses, these local addresses must be used
 		// as nameservers, so queries for ADDC could be resolved as expected.
 		if p.isAdDomainQuery(req.msg) {
-			ctrld.Log(ctx, mainLog.Load().Debug(),
+			ctrld.Log(ctx, MainLog.Load().Debug(),
 				"AD domain query detected for %s in domain %s",
 				req.msg.Question[0].Name, p.adDomain)
 			upstreamConfigs = []*ctrld.UpstreamConfig{localUpstreamConfig}
@@ -452,14 +452,14 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 	// 4. Try remote upstream.
 	isLanOrPtrQuery := false
 	if req.ufr.matched {
-		ctrld.Log(ctx, mainLog.Load().Debug(), "%s, %s, %s -> %v", req.ufr.matchedPolicy, req.ufr.matchedNetwork, req.ufr.matchedRule, upstreams)
+		ctrld.Log(ctx, MainLog.Load().Debug(), "%s, %s, %s -> %v", req.ufr.matchedPolicy, req.ufr.matchedNetwork, req.ufr.matchedRule, upstreams)
 	} else {
 		switch {
 		case isSrvLanLookup(req.msg):
 			upstreams = []string{upstreamOS}
 			upstreamConfigs = []*ctrld.UpstreamConfig{osUpstreamConfig}
 			ctx = ctrld.LanQueryCtx(ctx)
-			ctrld.Log(ctx, mainLog.Load().Debug(), "SRV record lookup, using upstreams: %v", upstreams)
+			ctrld.Log(ctx, MainLog.Load().Debug(), "SRV record lookup, using upstreams: %v", upstreams)
 		case isPrivatePtrLookup(req.msg):
 			isLanOrPtrQuery = true
 			if answer := p.proxyPrivatePtrLookup(ctx, req.msg); answer != nil {
@@ -469,7 +469,7 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 			}
 			upstreams, upstreamConfigs = p.upstreamsAndUpstreamConfigForPtr(upstreams, upstreamConfigs)
 			ctx = ctrld.LanQueryCtx(ctx)
-			ctrld.Log(ctx, mainLog.Load().Debug(), "private PTR lookup, using upstreams: %v", upstreams)
+			ctrld.Log(ctx, MainLog.Load().Debug(), "private PTR lookup, using upstreams: %v", upstreams)
 		case isLanHostnameQuery(req.msg):
 			isLanOrPtrQuery = true
 			if answer := p.proxyLanHostnameQuery(ctx, req.msg); answer != nil {
@@ -480,9 +480,9 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 			upstreams = []string{upstreamOS}
 			upstreamConfigs = []*ctrld.UpstreamConfig{osUpstreamConfig}
 			ctx = ctrld.LanQueryCtx(ctx)
-			ctrld.Log(ctx, mainLog.Load().Debug(), "lan hostname lookup, using upstreams: %v", upstreams)
+			ctrld.Log(ctx, MainLog.Load().Debug(), "lan hostname lookup, using upstreams: %v", upstreams)
 		default:
-			ctrld.Log(ctx, mainLog.Load().Debug(), "no explicit policy matched, using default routing -> %v", upstreams)
+			ctrld.Log(ctx, MainLog.Load().Debug(), "no explicit policy matched, using default routing -> %v", upstreams)
 		}
 	}
 
@@ -497,7 +497,7 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 			ctrld.SetCacheReply(answer, req.msg, answer.Rcode)
 			now := time.Now()
 			if cachedValue.Expire.After(now) {
-				ctrld.Log(ctx, mainLog.Load().Debug(), "hit cached response")
+				ctrld.Log(ctx, MainLog.Load().Debug(), "hit cached response")
 				setCachedAnswerTTL(answer, now, cachedValue.Expire)
 				res.answer = answer
 				res.cached = true
@@ -507,10 +507,10 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 		}
 	}
 	resolve1 := func(upstream string, upstreamConfig *ctrld.UpstreamConfig, msg *dns.Msg) (*dns.Msg, error) {
-		ctrld.Log(ctx, mainLog.Load().Debug(), "sending query to %s: %s", upstream, upstreamConfig.Name)
+		ctrld.Log(ctx, MainLog.Load().Debug(), "sending query to %s: %s", upstream, upstreamConfig.Name)
 		dnsResolver, err := ctrld.NewResolver(upstreamConfig)
 		if err != nil {
-			ctrld.Log(ctx, mainLog.Load().Error().Err(err), "failed to create resolver")
+			ctrld.Log(ctx, MainLog.Load().Error().Err(err), "failed to create resolver")
 			return nil, err
 		}
 		resolveCtx, cancel := upstreamConfig.Context(ctx)
@@ -519,7 +519,7 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 	}
 	resolve := func(upstream string, upstreamConfig *ctrld.UpstreamConfig, msg *dns.Msg) *dns.Msg {
 		if upstreamConfig.UpstreamSendClientInfo() && req.ci != nil {
-			ctrld.Log(ctx, mainLog.Load().Debug(), "including client info with the request")
+			ctrld.Log(ctx, MainLog.Load().Debug(), "including client info with the request")
 			ctx = context.WithValue(ctx, ctrld.ClientInfoCtxKey{}, req.ci)
 		}
 		answer, err := resolve1(upstream, upstreamConfig, msg)
@@ -533,7 +533,7 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 			return answer
 		}
 
-		ctrld.Log(ctx, mainLog.Load().Error().Err(err), "failed to resolve query")
+		ctrld.Log(ctx, MainLog.Load().Error().Err(err), "failed to resolve query")
 
 		// increase failure count when there is no answer
 		// rehardless of what kind of error we get
@@ -557,7 +557,7 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 		if upstreamConfig == nil {
 			continue
 		}
-		logger := mainLog.Load().Debug().
+		logger := MainLog.Load().Debug().
 			Str("upstream", upstreamConfig.String()).
 			Str("query", req.msg.Question[0].Name).
 			Bool("is_ad_query", p.isAdDomainQuery(req.msg)).
@@ -570,7 +570,7 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 		answer := resolve(upstreams[n], upstreamConfig, req.msg)
 		if answer == nil {
 			if serveStaleCache && staleAnswer != nil {
-				ctrld.Log(ctx, mainLog.Load().Debug(), "serving stale cached response")
+				ctrld.Log(ctx, MainLog.Load().Debug(), "serving stale cached response")
 				now := time.Now()
 				setCachedAnswerTTL(staleAnswer, now, now.Add(staleTTL))
 				res.answer = staleAnswer
@@ -582,11 +582,11 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 		// We are doing LAN/PTR lookup using private resolver, so always process next one.
 		// Except for the last, we want to send response instead of saying all upstream failed.
 		if answer.Rcode != dns.RcodeSuccess && isLanOrPtrQuery && n != len(upstreamConfigs)-1 {
-			ctrld.Log(ctx, mainLog.Load().Debug(), "no response from %s, process to next upstream", upstreams[n])
+			ctrld.Log(ctx, MainLog.Load().Debug(), "no response from %s, process to next upstream", upstreams[n])
 			continue
 		}
 		if answer.Rcode != dns.RcodeSuccess && len(upstreamConfigs) > 1 && containRcode(req.failoverRcodes, answer.Rcode) {
-			ctrld.Log(ctx, mainLog.Load().Debug(), "failover rcode matched, process to next upstream")
+			ctrld.Log(ctx, MainLog.Load().Debug(), "failover rcode matched, process to next upstream")
 			continue
 		}
 
@@ -602,18 +602,18 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 			}
 			setCachedAnswerTTL(answer, now, expired)
 			p.cache.Add(dnscache.NewKey(req.msg, upstreams[n]), dnscache.NewValue(answer, expired))
-			ctrld.Log(ctx, mainLog.Load().Debug(), "add cached response")
+			ctrld.Log(ctx, MainLog.Load().Debug(), "add cached response")
 		}
 		hostname := ""
 		if req.ci != nil {
 			hostname = req.ci.Hostname
 		}
-		ctrld.Log(ctx, mainLog.Load().Info(), "REPLY: %s -> %s (%s): %s", upstreams[n], req.ufr.srcAddr, hostname, dns.RcodeToString[answer.Rcode])
+		ctrld.Log(ctx, MainLog.Load().Info(), "REPLY: %s -> %s (%s): %s", upstreams[n], req.ufr.srcAddr, hostname, dns.RcodeToString[answer.Rcode])
 		res.answer = answer
 		res.upstream = upstreamConfig.Endpoint
 		return res
 	}
-	ctrld.Log(ctx, mainLog.Load().Error(), "all %v endpoints failed", upstreams)
+	ctrld.Log(ctx, MainLog.Load().Error(), "all %v endpoints failed", upstreams)
 
 	// if we have no healthy upstreams, trigger recovery flow
 	if p.leakOnUpstreamFailure() {
@@ -626,28 +626,28 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 				} else {
 					reason = RecoveryReasonRegularFailure
 				}
-				mainLog.Load().Debug().Msgf("No healthy upstreams, triggering recovery with reason: %v", reason)
+				MainLog.Load().Debug().Msgf("No healthy upstreams, triggering recovery with reason: %v", reason)
 				go p.handleRecovery(reason)
 			} else {
-				mainLog.Load().Debug().Msg("Recovery already in progress; skipping duplicate trigger from down detection")
+				MainLog.Load().Debug().Msg("Recovery already in progress; skipping duplicate trigger from down detection")
 			}
 			p.recoveryCancelMu.Unlock()
 		} else {
-			mainLog.Load().Debug().Msg("One upstream is down but at least one is healthy; skipping recovery trigger")
+			MainLog.Load().Debug().Msg("One upstream is down but at least one is healthy; skipping recovery trigger")
 		}
 
 		// attempt query to OS resolver while as a retry catch all
 		// we dont want this to happen if leakOnUpstreamFailure is false
 		if upstreams[0] != upstreamOS {
-			ctrld.Log(ctx, mainLog.Load().Debug(), "attempting query to OS resolver as a retry catch all")
+			ctrld.Log(ctx, MainLog.Load().Debug(), "attempting query to OS resolver as a retry catch all")
 			answer := resolve(upstreamOS, osUpstreamConfig, req.msg)
 			if answer != nil {
-				ctrld.Log(ctx, mainLog.Load().Debug(), "OS resolver retry query successful")
+				ctrld.Log(ctx, MainLog.Load().Debug(), "OS resolver retry query successful")
 				res.answer = answer
 				res.upstream = osUpstreamConfig.Endpoint
 				return res
 			}
-			ctrld.Log(ctx, mainLog.Load().Debug(), "OS resolver retry query failed")
+			ctrld.Log(ctx, MainLog.Load().Debug(), "OS resolver retry query failed")
 		}
 	}
 
@@ -856,7 +856,7 @@ func runDNSServer(addr, network string, handler dns.Handler) (*dns.Server, <-cha
 		defer close(errCh)
 		if err := s.ListenAndServe(); err != nil {
 			s.NotifyStartedFunc()
-			mainLog.Load().Error().Err(err).Msgf("could not listen and serve on: %s", s.Addr)
+			MainLog.Load().Error().Err(err).Msgf("could not listen and serve on: %s", s.Addr)
 			errCh <- err
 		}
 	}()
@@ -951,7 +951,7 @@ func (p *Prog) doSelfUninstall(answer *dns.Msg) {
 		return
 	}
 
-	logger := mainLog.Load().With().Str("mode", "self-uninstall").Logger()
+	logger := MainLog.Load().With().Str("mode", "self-uninstall").Logger()
 	if p.refusedQueryCount > selfUninstallMaxQueries {
 		p.checkingSelfUninstall = true
 		_, err := controld.FetchResolverConfig(cdUID, rootCmd.Version, cdDev)
@@ -1023,7 +1023,7 @@ func (p *Prog) queryFromSelf(ip string) bool {
 	netIP := netip.MustParseAddr(ip)
 	regularIPs, loopbackIPs, err := netmon.LocalAddresses()
 	if err != nil {
-		mainLog.Load().Warn().Err(err).Msg("could not get local addresses")
+		MainLog.Load().Warn().Err(err).Msg("could not get local addresses")
 		return false
 	}
 	for _, localIP := range slices.Concat(regularIPs, loopbackIPs) {
@@ -1143,7 +1143,7 @@ func isWanClient(na net.Addr) bool {
 
 // resolveInternalDomainTestQuery resolves internal test domain query, returning the answer to the caller.
 func resolveInternalDomainTestQuery(ctx context.Context, domain string, m *dns.Msg) *dns.Msg {
-	ctrld.Log(ctx, mainLog.Load().Debug(), "internal domain test query")
+	ctrld.Log(ctx, MainLog.Load().Debug(), "internal domain test query")
 
 	q := m.Question[0]
 	answer := new(dns.Msg)
@@ -1184,7 +1184,7 @@ func FlushDNSCache() error {
 func (p *Prog) monitorNetworkChanges() error {
 	mon, err := netmon.New(func(format string, args ...any) {
 		// Always fetch the latest logger (and inject the prefix)
-		mainLog.Load().Printf("netmon: "+format, args...)
+		MainLog.Load().Printf("netmon: "+format, args...)
 	})
 	if err != nil {
 		return fmt.Errorf("creating network monitor: %w", err)
@@ -1196,7 +1196,7 @@ func (p *Prog) monitorNetworkChanges() error {
 
 		isMajorChange := mon.IsMajorChangeFrom(delta.Old, delta.New)
 
-		mainLog.Load().Debug().
+		MainLog.Load().Debug().
 			Interface("old_state", delta.Old).
 			Interface("new_state", delta.New).
 			Bool("is_major_change", isMajorChange).
@@ -1224,7 +1224,7 @@ func (p *Prog) monitorNetworkChanges() error {
 				if newIface.IsUp() && len(usableNewIPs) > 0 {
 					changed = true
 					changeIPs = usableNewIPs
-					mainLog.Load().Debug().
+					MainLog.Load().Debug().
 						Str("interface", ifaceName).
 						Interface("new_ips", usableNewIPs).
 						Msg("Interface newly appeared (was not present in old state)")
@@ -1246,7 +1246,7 @@ func (p *Prog) monitorNetworkChanges() error {
 				if newIface.IsUp() && len(usableNewIPs) > 0 {
 					changed = true
 					changeIPs = usableNewIPs
-					mainLog.Load().Debug().
+					MainLog.Load().Debug().
 						Str("interface", ifaceName).
 						Interface("old_ips", oldIPs).
 						Interface("new_ips", usableNewIPs).
@@ -1259,18 +1259,18 @@ func (p *Prog) monitorNetworkChanges() error {
 		// if the default route changed, set changed to true
 		if delta.New.DefaultRouteInterface != delta.Old.DefaultRouteInterface {
 			changed = true
-			mainLog.Load().Debug().Msgf("Default route changed from %s to %s", delta.Old.DefaultRouteInterface, delta.New.DefaultRouteInterface)
+			MainLog.Load().Debug().Msgf("Default route changed from %s to %s", delta.Old.DefaultRouteInterface, delta.New.DefaultRouteInterface)
 		}
 
 		if !changed {
-			mainLog.Load().Debug().Msg("Ignoring interface change - no valid interfaces affected")
+			MainLog.Load().Debug().Msg("Ignoring interface change - no valid interfaces affected")
 			// check if the default IPs are still on an interface that is up
 			ValidateDefaultLocalIPsFromDelta(delta.New)
 			return
 		}
 
 		if !activeInterfaceExists {
-			mainLog.Load().Debug().Msg("No active interfaces found, skipping reinitialization")
+			MainLog.Load().Debug().Msg("No active interfaces found, skipping reinitialization")
 			return
 		}
 
@@ -1280,18 +1280,18 @@ func (p *Prog) monitorNetworkChanges() error {
 		// Ensure that selfIP is an IPv4 address.
 		// If defaultRouteIP mistakenly returns an IPv6 (such as a ULA), clear it
 		if ip := net.ParseIP(selfIP); ip != nil && ip.To4() == nil {
-			mainLog.Load().Debug().Msgf("defaultRouteIP returned a non-IPv4 address: %s, ignoring it", selfIP)
+			MainLog.Load().Debug().Msgf("defaultRouteIP returned a non-IPv4 address: %s, ignoring it", selfIP)
 			selfIP = ""
 		}
 		var ipv6 string
 
 		if delta.New.DefaultRouteInterface != "" {
-			mainLog.Load().Debug().Msgf("default route interface: %s, IPs: %v", delta.New.DefaultRouteInterface, delta.New.InterfaceIPs[delta.New.DefaultRouteInterface])
+			MainLog.Load().Debug().Msgf("default route interface: %s, IPs: %v", delta.New.DefaultRouteInterface, delta.New.InterfaceIPs[delta.New.DefaultRouteInterface])
 			for _, ip := range delta.New.InterfaceIPs[delta.New.DefaultRouteInterface] {
 				ipAddr, _ := netip.ParsePrefix(ip.String())
 				addr := ipAddr.Addr()
 				if selfIP == "" && addr.Is4() {
-					mainLog.Load().Debug().Msgf("checking IP: %s", addr.String())
+					MainLog.Load().Debug().Msgf("checking IP: %s", addr.String())
 					if !addr.IsLoopback() && !addr.IsLinkLocalUnicast() {
 						selfIP = addr.String()
 					}
@@ -1302,12 +1302,12 @@ func (p *Prog) monitorNetworkChanges() error {
 			}
 		} else {
 			// If no default route interface is set yet, use the changed IPs
-			mainLog.Load().Debug().Msgf("no default route interface found, using changed IPs: %v", changeIPs)
+			MainLog.Load().Debug().Msgf("no default route interface found, using changed IPs: %v", changeIPs)
 			for _, ip := range changeIPs {
 				ipAddr, _ := netip.ParsePrefix(ip.String())
 				addr := ipAddr.Addr()
 				if selfIP == "" && addr.Is4() {
-					mainLog.Load().Debug().Msgf("checking IP: %s", addr.String())
+					MainLog.Load().Debug().Msgf("checking IP: %s", addr.String())
 					if !addr.IsLoopback() && !addr.IsLinkLocalUnicast() {
 						selfIP = addr.String()
 					}
@@ -1328,7 +1328,7 @@ func (p *Prog) monitorNetworkChanges() error {
 		if ip := net.ParseIP(ipv6); ip != nil {
 			ctrld.SetDefaultLocalIPv6(ip)
 		}
-		mainLog.Load().Debug().Msgf("Set default local IPv4: %s, IPv6: %s", selfIP, ipv6)
+		MainLog.Load().Debug().Msgf("Set default local IPv4: %s, IPv6: %s", selfIP, ipv6)
 
 		// we only trigger recovery flow for network changes on non router devices
 		if router.Name() == "" {
@@ -1337,7 +1337,7 @@ func (p *Prog) monitorNetworkChanges() error {
 	})
 
 	mon.Start()
-	mainLog.Load().Debug().Msg("Network monitor started")
+	MainLog.Load().Debug().Msg("Network monitor started")
 	return nil
 }
 
@@ -1392,11 +1392,11 @@ func interfaceIPsEqual(a, b []netip.Prefix) bool {
 // checkUpstreamOnce sends a test query to the specified upstream.
 // Returns nil if the upstream responds successfully.
 func (p *Prog) checkUpstreamOnce(upstream string, uc *ctrld.UpstreamConfig) error {
-	mainLog.Load().Debug().Msgf("Starting check for upstream: %s", upstream)
+	MainLog.Load().Debug().Msgf("Starting check for upstream: %s", upstream)
 
 	resolver, err := ctrld.NewResolver(uc)
 	if err != nil {
-		mainLog.Load().Error().Err(err).Msgf("Failed to create resolver for upstream %s", upstream)
+		MainLog.Load().Error().Err(err).Msgf("Failed to create resolver for upstream %s", upstream)
 		return err
 	}
 
@@ -1404,13 +1404,13 @@ func (p *Prog) checkUpstreamOnce(upstream string, uc *ctrld.UpstreamConfig) erro
 	if uc.Timeout > 0 {
 		timeout = time.Millisecond * time.Duration(uc.Timeout)
 	}
-	mainLog.Load().Debug().Msgf("Timeout for upstream %s: %s", upstream, timeout)
+	MainLog.Load().Debug().Msgf("Timeout for upstream %s: %s", upstream, timeout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	uc.ReBootstrap()
-	mainLog.Load().Debug().Msgf("Rebootstrapping resolver for upstream: %s", upstream)
+	MainLog.Load().Debug().Msgf("Rebootstrapping resolver for upstream: %s", upstream)
 
 	start := time.Now()
 	msg := uc.VerifyMsg()
@@ -1418,9 +1418,9 @@ func (p *Prog) checkUpstreamOnce(upstream string, uc *ctrld.UpstreamConfig) erro
 	duration := time.Since(start)
 
 	if err != nil {
-		mainLog.Load().Error().Err(err).Msgf("Upstream %s check failed after %v", upstream, duration)
+		MainLog.Load().Error().Err(err).Msgf("Upstream %s check failed after %v", upstream, duration)
 	} else {
-		mainLog.Load().Debug().Msgf("Upstream %s responded successfully in %v", upstream, duration)
+		MainLog.Load().Debug().Msgf("Upstream %s responded successfully in %v", upstream, duration)
 	}
 	return err
 }
@@ -1430,13 +1430,13 @@ func (p *Prog) checkUpstreamOnce(upstream string, uc *ctrld.UpstreamConfig) erro
 // upstream failure recoveries, waiting for recovery to complete (using a cancellable context without timeout),
 // and then re-applying the DNS settings.
 func (p *Prog) handleRecovery(reason RecoveryReason) {
-	mainLog.Load().Debug().Msg("Starting recovery process: removing DNS settings")
+	MainLog.Load().Debug().Msg("Starting recovery process: removing DNS settings")
 
 	// For network changes, cancel any existing recovery check because the network state has changed.
 	if reason == RecoveryReasonNetworkChange {
 		p.recoveryCancelMu.Lock()
 		if p.recoveryCancel != nil {
-			mainLog.Load().Debug().Msg("Cancelling existing recovery check (network change)")
+			MainLog.Load().Debug().Msg("Cancelling existing recovery check (network change)")
 			p.recoveryCancel()
 			p.recoveryCancel = nil
 		}
@@ -1445,7 +1445,7 @@ func (p *Prog) handleRecovery(reason RecoveryReason) {
 		// For upstream failures, if a recovery is already in progress, do nothing new.
 		p.recoveryCancelMu.Lock()
 		if p.recoveryCancel != nil {
-			mainLog.Load().Debug().Msg("Upstream recovery already in progress; skipping duplicate trigger")
+			MainLog.Load().Debug().Msg("Upstream recovery already in progress; skipping duplicate trigger")
 			p.recoveryCancelMu.Unlock()
 			return
 		}
@@ -1464,16 +1464,16 @@ func (p *Prog) handleRecovery(reason RecoveryReason) {
 	// we do not want to restore any static DNS settings
 	// we must try to get the DHCP values, any static DNS settings
 	// will be appended to nameservers from the saved interface values
-	p.resetDNS(false, false)
+	p.ResetDNS(false, false)
 
 	// For an OS failure, reinitialize OS resolver nameservers immediately.
 	if reason == RecoveryReasonOSFailure {
-		mainLog.Load().Debug().Msg("OS resolver failure detected; reinitializing OS resolver nameservers")
+		MainLog.Load().Debug().Msg("OS resolver failure detected; reinitializing OS resolver nameservers")
 		ns := ctrld.InitializeOsResolver(true)
 		if len(ns) == 0 {
-			mainLog.Load().Warn().Msg("No nameservers found for OS resolver; using existing values")
+			MainLog.Load().Warn().Msg("No nameservers found for OS resolver; using existing values")
 		} else {
-			mainLog.Load().Info().Msgf("Reinitialized OS resolver with nameservers: %v", ns)
+			MainLog.Load().Info().Msgf("Reinitialized OS resolver with nameservers: %v", ns)
 		}
 	}
 
@@ -1483,13 +1483,13 @@ func (p *Prog) handleRecovery(reason RecoveryReason) {
 	// Wait indefinitely until one of the upstreams recovers.
 	recovered, err := p.waitForUpstreamRecovery(recoveryCtx, upstreams)
 	if err != nil {
-		mainLog.Load().Error().Err(err).Msg("Recovery canceled; DNS settings remain removed")
+		MainLog.Load().Error().Err(err).Msg("Recovery canceled; DNS settings remain removed")
 		p.recoveryCancelMu.Lock()
 		p.recoveryCancel = nil
 		p.recoveryCancelMu.Unlock()
 		return
 	}
-	mainLog.Load().Info().Msgf("Upstream %q recovered; re-applying DNS settings", recovered)
+	MainLog.Load().Info().Msgf("Upstream %q recovered; re-applying DNS settings", recovered)
 
 	// reset the upstream failure count and down state
 	p.um.reset(recovered)
@@ -1498,9 +1498,9 @@ func (p *Prog) handleRecovery(reason RecoveryReason) {
 	if reason == RecoveryReasonNetworkChange {
 		ns := ctrld.InitializeOsResolver(true)
 		if len(ns) == 0 {
-			mainLog.Load().Warn().Msg("No nameservers found for OS resolver during network-change recovery; using existing values")
+			MainLog.Load().Warn().Msg("No nameservers found for OS resolver during network-change recovery; using existing values")
 		} else {
-			mainLog.Load().Info().Msgf("Reinitialized OS resolver with nameservers: %v", ns)
+			MainLog.Load().Info().Msgf("Reinitialized OS resolver with nameservers: %v", ns)
 		}
 	}
 
@@ -1523,44 +1523,44 @@ func (p *Prog) waitForUpstreamRecovery(ctx context.Context, upstreams map[string
 	recoveredCh := make(chan string, 1)
 	var wg sync.WaitGroup
 
-	mainLog.Load().Debug().Msgf("Starting upstream recovery check for %d upstreams", len(upstreams))
+	MainLog.Load().Debug().Msgf("Starting upstream recovery check for %d upstreams", len(upstreams))
 
 	for name, uc := range upstreams {
 		wg.Add(1)
 		go func(name string, uc *ctrld.UpstreamConfig) {
 			defer wg.Done()
-			mainLog.Load().Debug().Msgf("Starting recovery check loop for upstream: %s", name)
+			MainLog.Load().Debug().Msgf("Starting recovery check loop for upstream: %s", name)
 			attempts := 0
 			for {
 				select {
 				case <-ctx.Done():
-					mainLog.Load().Debug().Msgf("Context canceled for upstream %s", name)
+					MainLog.Load().Debug().Msgf("Context canceled for upstream %s", name)
 					return
 				default:
 					attempts++
 					// checkUpstreamOnce will reset any failure counters on success.
 					if err := p.checkUpstreamOnce(name, uc); err == nil {
-						mainLog.Load().Debug().Msgf("Upstream %s recovered successfully", name)
+						MainLog.Load().Debug().Msgf("Upstream %s recovered successfully", name)
 						select {
 						case recoveredCh <- name:
-							mainLog.Load().Debug().Msgf("Sent recovery notification for upstream %s", name)
+							MainLog.Load().Debug().Msgf("Sent recovery notification for upstream %s", name)
 						default:
-							mainLog.Load().Debug().Msg("Recovery channel full, another upstream already recovered")
+							MainLog.Load().Debug().Msg("Recovery channel full, another upstream already recovered")
 						}
 						return
 					}
-					mainLog.Load().Debug().Msgf("Upstream %s check failed, sleeping before retry", name)
+					MainLog.Load().Debug().Msgf("Upstream %s check failed, sleeping before retry", name)
 					time.Sleep(checkUpstreamBackoffSleep)
 
 					// if this is the upstreamOS and it's the 3rd attempt (or multiple of 3),
 					// we should try to reinit the OS resolver to ensure we can recover
 					if name == upstreamOS && attempts%3 == 0 {
-						mainLog.Load().Debug().Msgf("UpstreamOS check failed on attempt %d, reinitializing OS resolver", attempts)
+						MainLog.Load().Debug().Msgf("UpstreamOS check failed on attempt %d, reinitializing OS resolver", attempts)
 						ns := ctrld.InitializeOsResolver(true)
 						if len(ns) == 0 {
-							mainLog.Load().Warn().Msg("No nameservers found for OS resolver; using existing values")
+							MainLog.Load().Warn().Msg("No nameservers found for OS resolver; using existing values")
 						} else {
-							mainLog.Load().Info().Msgf("Reinitialized OS resolver with nameservers: %v", ns)
+							MainLog.Load().Info().Msgf("Reinitialized OS resolver with nameservers: %v", ns)
 						}
 					}
 				}
@@ -1615,13 +1615,13 @@ func ValidateDefaultLocalIPsFromDelta(newState *netmon.State) {
 
 	// Check if the default IPv4 is still active.
 	if currentIPv4 != nil && !activeIPs[currentIPv4.String()] {
-		mainLog.Load().Debug().Msgf("DefaultLocalIPv4 %s is no longer active in the new state. Resetting.", currentIPv4)
+		MainLog.Load().Debug().Msgf("DefaultLocalIPv4 %s is no longer active in the new state. Resetting.", currentIPv4)
 		ctrld.SetDefaultLocalIPv4(nil)
 	}
 
 	// Check if the default IPv6 is still active.
 	if currentIPv6 != nil && !activeIPs[currentIPv6.String()] {
-		mainLog.Load().Debug().Msgf("DefaultLocalIPv6 %s is no longer active in the new state. Resetting.", currentIPv6)
+		MainLog.Load().Debug().Msgf("DefaultLocalIPv6 %s is no longer active in the new state. Resetting.", currentIPv6)
 		ctrld.SetDefaultLocalIPv6(nil)
 	}
 }

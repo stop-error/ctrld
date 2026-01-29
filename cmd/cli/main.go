@@ -41,7 +41,7 @@ var (
 	startOnly         bool
 	rfc1918           bool
 
-	mainLog       atomic.Pointer[zerolog.Logger]
+	MainLog       atomic.Pointer[zerolog.Logger]
 	consoleWriter zerolog.ConsoleWriter
 	noConfigStart bool
 )
@@ -55,14 +55,14 @@ const (
 
 func init() {
 	l := zerolog.New(io.Discard)
-	mainLog.Store(&l)
+	MainLog.Store(&l)
 }
 
 func Main() {
 	ctrld.InitConfig(v, "ctrld")
 	initCLI()
 	if err := rootCmd.Execute(); err != nil {
-		mainLog.Load().Error().Msg(err.Error())
+		MainLog.Load().Error().Msg(err.Error())
 		os.Exit(1)
 	}
 }
@@ -81,14 +81,14 @@ func normalizeLogFilePath(logFilePath string) string {
 	return filepath.Join(dir, logFilePath)
 }
 
-// initConsoleLogging initializes console logging, then storing to mainLog.
+// initConsoleLogging initializes console logging, then storing to MainLog.
 func initConsoleLogging() {
 	consoleWriter = zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
 		w.TimeFormat = time.StampMilli
 	})
 	multi := zerolog.MultiLevelWriter(consoleWriter)
-	l := mainLog.Load().Output(multi).With().Timestamp().Logger()
-	mainLog.Store(&l)
+	l := MainLog.Load().Output(multi).With().Timestamp().Logger()
+	MainLog.Store(&l)
 
 	switch {
 	case silent:
@@ -129,7 +129,7 @@ func initLoggingWithBackup(doBackup bool) []io.Writer {
 	if logFilePath := normalizeLogFilePath(Cfg.Service.LogPath); logFilePath != "" {
 		// Create parent directory if necessary.
 		if err := os.MkdirAll(filepath.Dir(logFilePath), 0750); err != nil {
-			mainLog.Load().Error().Msgf("failed to create log path: %v", err)
+			MainLog.Load().Error().Msgf("failed to create log path: %v", err)
 			os.Exit(1)
 		}
 
@@ -138,7 +138,7 @@ func initLoggingWithBackup(doBackup bool) []io.Writer {
 		if doBackup {
 			// Backup old log file with .1 suffix.
 			if err := os.Rename(logFilePath, logFilePath+oldLogSuffix); err != nil && !os.IsNotExist(err) {
-				mainLog.Load().Error().Msgf("could not backup old log file: %v", err)
+				MainLog.Load().Error().Msgf("could not backup old log file: %v", err)
 			} else {
 				// Backup was created, set flags for truncating old log file.
 				flags = os.O_CREATE | os.O_RDWR
@@ -146,15 +146,15 @@ func initLoggingWithBackup(doBackup bool) []io.Writer {
 		}
 		logFile, err := openLogFile(logFilePath, flags)
 		if err != nil {
-			mainLog.Load().Error().Msgf("failed to create log file: %v", err)
+			MainLog.Load().Error().Msgf("failed to create log file: %v", err)
 			os.Exit(1)
 		}
 		writers = append(writers, logFile)
 	}
 	writers = append(writers, consoleWriter)
 	multi := zerolog.MultiLevelWriter(writers...)
-	l := mainLog.Load().Output(multi).With().Logger()
-	mainLog.Store(&l)
+	l := MainLog.Load().Output(multi).With().Logger()
+	MainLog.Store(&l)
 	// TODO: find a better way.
 	ctrld.ProxyLogger.Store(&l)
 
@@ -174,7 +174,7 @@ func initLoggingWithBackup(doBackup bool) []io.Writer {
 	}
 	level, err := zerolog.ParseLevel(logLevel)
 	if err != nil {
-		mainLog.Load().Warn().Err(err).Msg("could not set log level")
+		MainLog.Load().Warn().Err(err).Msg("could not set log level")
 		return writers
 	}
 	zerolog.SetGlobalLevel(level)

@@ -7,7 +7,7 @@ func setupNetworkManager() error {
 	return nil
 }
 
-func restoreNetworkManager() error {
+func RestoreNetworkManager() error {
 	reloadNetworkManager()
 	return nil
 }

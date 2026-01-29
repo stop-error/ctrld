@@ -12,6 +12,6 @@ var logOutput strings.Builder
 
 func TestMain(m *testing.M) {
 	l := zerolog.New(&logOutput)
-	mainLog.Store(&l)
+	MainLog.Store(&l)
 	os.Exit(m.Run())
 }
