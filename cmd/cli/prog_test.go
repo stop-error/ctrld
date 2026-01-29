@@ -16,7 +16,7 @@ func Test_prog_dnsWatchdogEnabled(t *testing.T) {
 	p := &Prog{cfg: &ctrld.Config{}}
 
 	// Default value is true.
-	assert.True(t, p.dnsWatchdogEnabled())
+	assert.True(t, p.DnsWatchdogEnabled())
 
 	tests := []struct {
 		name    string
@@ -30,7 +30,7 @@ func Test_prog_dnsWatchdogEnabled(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			p.cfg.Service.DnsWatchdogEnabled = &tc.enabled
-			assert.Equal(t, tc.enabled, p.dnsWatchdogEnabled())
+			assert.Equal(t, tc.enabled, p.DnsWatchdogEnabled())
 		})
 	}
 }

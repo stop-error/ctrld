@@ -37,7 +37,7 @@ func (p *Prog) parseResolvConfNameservers(path string) ([]string, error) {
 
 // watchResolvConf watches any changes to /etc/resolv.conf file,
 // and reverting to the original config set by ctrld.
-func (p *Prog) watchResolvConf(iface *net.Interface, ns []netip.Addr, setDnsFn func(iface *net.Interface, ns []netip.Addr) error) {
+func (p *Prog) WatchResolvConf(iface *net.Interface, ns []netip.Addr, setDnsFn func(iface *net.Interface, ns []netip.Addr) error) {
 	resolvConfPath := "/etc/resolv.conf"
 	// Evaluating symbolics link to watch the target file that /etc/resolv.conf point to.
 	if rp, _ := filepath.EvalSymlinks(resolvConfPath); rp != "" {

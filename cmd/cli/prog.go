@@ -748,7 +748,7 @@ func (p *Prog) SetDNS() {
 	slices.Sort(nameservers)
 
 	netIfaceName := ""
-	netIface := p.setDnsForRunningIface(nameservers)
+	netIface := p.SetDnsForRunningIface(nameservers)
 	if netIface != nil {
 		netIfaceName = netIface.Name
 	}
@@ -769,19 +769,19 @@ func (p *Prog) SetDNS() {
 		p.dnsWg.Add(1)
 		go func() {
 			defer p.dnsWg.Done()
-			p.watchResolvConf(netIface, servers, setResolvConf)
+			p.WatchResolvConf(netIface, servers, setResolvConf)
 		}()
 	}
-	if p.dnsWatchdogEnabled() {
+	if p.DnsWatchdogEnabled() {
 		p.dnsWg.Add(1)
 		go func() {
 			defer p.dnsWg.Done()
-			p.dnsWatchdog(netIface, nameservers)
+			p.DnsWatchdog(netIface, nameservers)
 		}()
 	}
 }
 
-func (p *Prog) setDnsForRunningIface(nameservers []string) (runningIface *net.Interface) {
+func (p *Prog) SetDnsForRunningIface(nameservers []string) (runningIface *net.Interface) {
 	if p.runningIface == "" {
 		return
 	}
@@ -830,7 +830,7 @@ func (p *Prog) setDnsForRunningIface(nameservers []string) (runningIface *net.In
 }
 
 // dnsWatchdogEnabled reports whether DNS watchdog is enabled.
-func (p *Prog) dnsWatchdogEnabled() bool {
+func (p *Prog) DnsWatchdogEnabled() bool {
 	if ptr := p.cfg.Service.DnsWatchdogEnabled; ptr != nil {
 		return *ptr
 	}
@@ -849,7 +849,7 @@ func (p *Prog) dnsWatchdogDuration() time.Duration {
 
 // dnsWatchdog watches for DNS changes on Darwin and Windows then re-applying ctrld's settings.
 // This is only works when deactivation pin set.
-func (p *Prog) dnsWatchdog(iface *net.Interface, nameservers []string) {
+func (p *Prog) DnsWatchdog(iface *net.Interface, nameservers []string) {
 	if !requiredMultiNICsConfig() {
 		return
 	}
