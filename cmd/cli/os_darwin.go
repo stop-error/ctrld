@@ -32,8 +32,8 @@ func deAllocateIP(ip string) error {
 }
 
 // setDnsIgnoreUnusableInterface likes setDNS, but return a nil error if the interface is not usable.
-func setDnsIgnoreUnusableInterface(iface *net.Interface, nameservers []string) error {
-	if err := setDNS(iface, nameservers); err != nil {
+func SetDnsIgnoreUnusableInterface(iface *net.Interface, nameservers []string) error {
+	if err := SetDNS(iface, nameservers); err != nil {
 		// TODO: investiate whether we can detect this without relying on error message.
 		if strings.Contains(err.Error(), " is not a recognized network service") {
 			return nil
@@ -46,7 +46,7 @@ func setDnsIgnoreUnusableInterface(iface *net.Interface, nameservers []string) e
 // set the dns server for the provided network interface
 // networksetup -setdnsservers Wi-Fi 8.8.8.8 1.1.1.1
 // TODO(cuonglm): use system API
-func setDNS(iface *net.Interface, nameservers []string) error {
+func SetDNS(iface *net.Interface, nameservers []string) error {
 	// Note that networksetup won't modify search domains settings,
 	// This assignment is just a placeholder to silent linter.
 	_ = searchDomains
@@ -85,7 +85,7 @@ func resetDNS(iface *net.Interface) error {
 // this should only be executed upon turning off the ctrld service.
 func restoreDNS(iface *net.Interface) (err error) {
 	if ns := savedStaticNameservers(iface); len(ns) > 0 {
-		err = setDNS(iface, ns)
+		err = SetDNS(iface, ns)
 	}
 	return err
 }

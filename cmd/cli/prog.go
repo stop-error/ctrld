@@ -128,7 +128,7 @@ type Prog struct {
 	internalLogWriter         *logWriter
 	internalWarnLogWriter     *logWriter
 	internalLogSent           time.Time
-	runningIface              string
+	RunningIface              string
 	RequiredMultiNICsConfig   bool
 	adDomain                  string
 	runningOnDomainController bool
@@ -276,7 +276,7 @@ func (p *Prog) preRun() {
 		iface = defaultIfaceName()
 		p.RequiredMultiNICsConfig = RequiredMultiNICsConfig()
 	}
-	p.runningIface = iface
+	p.RunningIface = iface
 }
 
 func (p *Prog) postRun() {
@@ -782,27 +782,27 @@ func (p *Prog) SetDNS() {
 }
 
 func (p *Prog) SetDnsForRunningIface(nameservers []string) (runningIface *net.Interface) {
-	if p.runningIface == "" {
+	if p.RunningIface == "" {
 		return
 	}
 
-	logger := mainLog.Load().With().Str("iface", p.runningIface).Logger()
+	logger := mainLog.Load().With().Str("iface", p.RunningIface).Logger()
 
 	const maxDNSRetryAttempts = 3
 	const retryDelay = 1 * time.Second
 	var netIface *net.Interface
 	var err error
 	for attempt := 1; attempt <= maxDNSRetryAttempts; attempt++ {
-		netIface, err = netInterface(p.runningIface)
+		netIface, err = netInterface(p.RunningIface)
 		if err == nil {
 			break
 		}
 		if attempt < maxDNSRetryAttempts {
 			// Try to find a different working interface
-			newIface := findWorkingInterface(p.runningIface)
-			if newIface != p.runningIface {
-				p.runningIface = newIface
-				logger = mainLog.Load().With().Str("iface", p.runningIface).Logger()
+			newIface := findWorkingInterface(p.RunningIface)
+			if newIface != p.RunningIface {
+				p.RunningIface = newIface
+				logger = mainLog.Load().With().Str("iface", p.RunningIface).Logger()
 				logger.Info().Msg("switched to new interface")
 				continue
 			}
@@ -821,7 +821,7 @@ func (p *Prog) SetDnsForRunningIface(nameservers []string) (runningIface *net.In
 
 	runningIface = netIface
 	logger.Debug().Msg("setting DNS for interface")
-	if err := setDNS(netIface, nameservers); err != nil {
+	if err := SetDNS(netIface, nameservers); err != nil {
 		logger.Error().Err(err).Msgf("could not set DNS for interface")
 		return
 	}
@@ -891,7 +891,7 @@ func (p *Prog) DnsWatchdog(iface *net.Interface, nameservers []string) {
 						}
 					}
 				}
-				if err := setDNS(iface, ns); err != nil {
+				if err := SetDNS(iface, ns); err != nil {
 					mainLog.Load().Error().Err(err).Str("iface", iface.Name).Msgf("could not re-apply DNS settings")
 				}
 			}
@@ -954,12 +954,12 @@ func (p *Prog) resetDNS(isStart bool, restoreStatic bool) {
 // static DNS settings and we do not override them using the potentially out-of-date saved file.
 // Otherwise, we restore the saved configuration (if any) or reset to DHCP.
 func (p *Prog) resetDNSForRunningIface(isStart bool, restoreStatic bool) (runningIface *net.Interface) {
-	if p.runningIface == "" {
+	if p.RunningIface == "" {
 		mainLog.Load().Debug().Msg("no running interface, skipping resetDNS")
 		return
 	}
-	logger := mainLog.Load().With().Str("iface", p.runningIface).Logger()
-	netIface, err := netInterface(p.runningIface)
+	logger := mainLog.Load().With().Str("iface", p.RunningIface).Logger()
+	netIface, err := netInterface(p.RunningIface)
 	if err != nil {
 		logger.Error().Err(err).Msg("could not get interface")
 		return
@@ -995,7 +995,7 @@ func (p *Prog) resetDNSForRunningIface(isStart bool, restoreStatic bool) (runnin
 	saved := savedStaticNameservers(netIface)
 	if len(saved) > 0 && restoreStatic {
 		logger.Debug().Msgf("Restoring interface %q from saved static config: %v", netIface.Name, saved)
-		if err := setDNS(netIface, saved); err != nil {
+		if err := SetDNS(netIface, saved); err != nil {
 			logger.Error().Err(err).Msgf("failed to restore static DNS config on interface %q", netIface.Name)
 			return
 		}

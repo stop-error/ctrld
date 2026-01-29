@@ -51,11 +51,11 @@ func deAllocateIP(ip string) error {
 const maxSetDNSAttempts = 5
 
 // setDnsIgnoreUnusableInterface likes setDNS, but return a nil error if the interface is not usable.
-func setDnsIgnoreUnusableInterface(iface *net.Interface, nameservers []string) error {
-	return setDNS(iface, nameservers)
+func SetDnsIgnoreUnusableInterface(iface *net.Interface, nameservers []string) error {
+	return SetDNS(iface, nameservers)
 }
 
-func setDNS(iface *net.Interface, nameservers []string) error {
+func SetDNS(iface *net.Interface, nameservers []string) error {
 	r, err := dns.NewOSConfigurator(logf, &health.Tracker{}, &controlknobs.Knobs{}, iface.Name)
 	if err != nil {
 		mainLog.Load().Error().Err(err).Msg("failed to create DNS OS configurator")
@@ -190,7 +190,7 @@ func resetDNS(iface *net.Interface) (err error) {
 	}
 
 	return ignoringEINTR(func() error {
-		return setDNS(iface, ns)
+		return SetDNS(iface, ns)
 	})
 }
 

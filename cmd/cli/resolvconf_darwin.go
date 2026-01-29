@@ -17,7 +17,7 @@ func setResolvConf(iface *net.Interface, ns []netip.Addr) error {
 	for i := range ns {
 		servers[i] = ns[i].String()
 	}
-	if err := setDNS(iface, servers); err != nil {
+	if err := SetDNS(iface, servers); err != nil {
 		return err
 	}
 	slices.Sort(servers)
@@ -44,6 +44,6 @@ func setResolvConf(iface *net.Interface, ns []netip.Addr) error {
 }
 
 // shouldWatchResolvconf reports whether ctrld should watch changes to resolv.conf file with given OS configurator.
-func shouldWatchResolvconf() bool {
+func ShouldWatchResolvconf() bool {
 	return true
 }

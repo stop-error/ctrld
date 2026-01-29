@@ -1084,7 +1084,7 @@ func uninstall(p *Prog, s service.Service) {
 		p.resetDNS(false, true)
 
 		// Iterate over all physical interfaces and restore DNS if a saved static config exists.
-		WithEachPhysicalInterfaces(p.runningIface, "restore static DNS", func(i *net.Interface) error {
+		WithEachPhysicalInterfaces(p.RunningIface, "restore static DNS", func(i *net.Interface) error {
 			file := savedStaticDnsSettingsFilePath(i)
 			if _, err := os.Stat(file); err == nil {
 				if err := restoreDNS(i); err != nil {

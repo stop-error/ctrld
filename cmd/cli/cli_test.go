@@ -16,7 +16,7 @@ func Test_writeConfigFile(t *testing.T) {
 	_, err := os.Stat(configPath)
 	assert.True(t, os.IsNotExist(err))
 
-	assert.NoError(t, writeConfigFile(&cfg))
+	assert.NoError(t, writeConfigFile(&Cfg))
 
 	_, err = os.Stat(configPath)
 	require.NoError(t, err)

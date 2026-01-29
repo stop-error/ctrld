@@ -31,11 +31,11 @@ var (
 
 // setDnsIgnoreUnusableInterface likes setDNS, but return a nil error if the interface is not usable.
 func SetDnsIgnoreUnusableInterface(iface *net.Interface, nameservers []string) error {
-	return setDNS(iface, nameservers)
+	return SetDNS(iface, nameservers)
 }
 
 // setDNS sets the dns server for the provided network interface
-func setDNS(iface *net.Interface, nameservers []string) error {
+func SetDNS(iface *net.Interface, nameservers []string) error {
 	if len(nameservers) == 0 {
 		return errors.New("empty DNS nameservers")
 	}
@@ -179,7 +179,7 @@ func restoreDNS(iface *net.Interface) (err error) {
 
 		if len(v4ns) > 0 {
 			mainLog.Load().Debug().Msgf("restoring IPv4 static DNS for interface %q: %v", iface.Name, v4ns)
-			if err := setDNS(iface, v4ns); err != nil {
+			if err := SetDNS(iface, v4ns); err != nil {
 				return fmt.Errorf("restoreDNS (IPv4): %w", err)
 			}
 		} else {
@@ -191,7 +191,7 @@ func restoreDNS(iface *net.Interface) (err error) {
 
 		if len(v6ns) > 0 {
 			mainLog.Load().Debug().Msgf("restoring IPv6 static DNS for interface %q: %v", iface.Name, v6ns)
-			if err := setDNS(iface, v6ns); err != nil {
+			if err := SetDNS(iface, v6ns); err != nil {
 				return fmt.Errorf("restoreDNS (IPv6): %w", err)
 			}
 		} else {

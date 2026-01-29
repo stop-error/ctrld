@@ -33,7 +33,7 @@ func setResolvConf(iface *net.Interface, ns []netip.Addr) error {
 }
 
 // shouldWatchResolvconf reports whether ctrld should watch changes to resolv.conf file with given OS configurator.
-func shouldWatchResolvconf() bool {
+func ShouldWatchResolvconf() bool {
 	r, err := newLoopbackOSConfigurator()
 	if err != nil {
 		return false
