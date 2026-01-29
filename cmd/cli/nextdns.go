@@ -13,7 +13,7 @@ func generateNextDNSConfig(uid string) {
 		return
 	}
 	mainLog.Load().Info().Msg("generating ctrld config for NextDNS resolver")
-	cfg = ctrld.Config{
+	Cfg = ctrld.Config{
 		Listener: map[string]*ctrld.ListenerConfig{
 			"0": {
 				IP:   "0.0.0.0",

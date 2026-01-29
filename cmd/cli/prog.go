@@ -104,8 +104,8 @@ type Prog struct {
 	logConn              net.Conn
 	cs                   *controlServer
 	csSetDnsDone         chan struct{}
-	csSetDnsOk           bool
-	dnsWg                sync.WaitGroup
+	CsSetDnsOk           bool
+	DnsWg                sync.WaitGroup
 	dnsWatcherClosedOnce sync.Once
 	dnsWatcherStopCh     chan struct{}
 	rc                   *controld.ResolverConfig
@@ -129,7 +129,7 @@ type Prog struct {
 	internalWarnLogWriter     *logWriter
 	internalLogSent           time.Time
 	runningIface              string
-	requiredMultiNICsConfig   bool
+	RequiredMultiNICsConfig   bool
 	adDomain                  string
 	runningOnDomainController bool
 
@@ -159,7 +159,7 @@ func (p *Prog) Start(s service.Service) error {
 // runWait runs ctrld components, waiting for signal to reload.
 func (p *Prog) runWait() {
 	p.mu.Lock()
-	p.cfg = &cfg
+	p.cfg = &Cfg
 	p.mu.Unlock()
 	reloadSigCh := make(chan os.Signal, 1)
 	notifyReloadSigCh(reloadSigCh)
@@ -274,7 +274,7 @@ func (p *Prog) runWait() {
 func (p *Prog) preRun() {
 	if iface == "auto" {
 		iface = defaultIfaceName()
-		p.requiredMultiNICsConfig = requiredMultiNICsConfig()
+		p.RequiredMultiNICsConfig = RequiredMultiNICsConfig()
 	}
 	p.runningIface = iface
 }
@@ -611,7 +611,7 @@ func (p *Prog) run(reload bool, reloadCh chan struct{}) {
 
 // setupClientInfoDiscover performs necessary works for running client info discover.
 func (p *Prog) setupClientInfoDiscover(selfIP string) {
-	p.ciTable = clientinfo.NewTable(&cfg, selfIP, cdUID, p.ptrNameservers)
+	p.ciTable = clientinfo.NewTable(&Cfg, selfIP, cdUID, p.ptrNameservers)
 	if leaseFile := p.cfg.Service.DHCPLeaseFile; leaseFile != "" {
 		mainLog.Load().Debug().Msgf("watching custom lease file: %s", leaseFile)
 		format := ctrld.LeaseFileFormat(p.cfg.Service.DHCPLeaseFileFormat)
@@ -683,7 +683,7 @@ func (p *Prog) stopDnsWatchers() {
 	p.dnsWatcherClosedOnce.Do(func() {
 		close(p.dnsWatcherStopCh)
 	})
-	p.dnsWg.Wait()
+	p.DnsWg.Wait()
 }
 
 func (p *Prog) allocateIP(ip string) error {
@@ -712,13 +712,13 @@ func (p *Prog) deAllocateIP() error {
 func (p *Prog) SetDNS() {
 	setDnsOK := false
 	defer func() {
-		p.csSetDnsOk = setDnsOK
+		p.CsSetDnsOk = setDnsOK
 	}()
 
-	if cfg.Listener == nil {
+	if Cfg.Listener == nil {
 		return
 	}
-	lc := cfg.FirstListener()
+	lc := Cfg.FirstListener()
 	if lc == nil {
 		return
 	}
@@ -738,10 +738,10 @@ func (p *Prog) SetDNS() {
 	}
 
 	nameservers := []string{ns}
-	if needRFC1918Listeners(lc) {
+	if NeedRFC1918Listeners(lc) {
 		nameservers = append(nameservers, ctrld.Rfc1918Addresses()...)
 	}
-	if needLocalIPv6Listener() {
+	if NeedLocalIPv6Listener() {
 		nameservers = append(nameservers, "::1")
 	}
 
@@ -754,28 +754,28 @@ func (p *Prog) SetDNS() {
 	}
 	setDnsOK = true
 
-	if p.requiredMultiNICsConfig {
-		withEachPhysicalInterfaces(netIfaceName, "set DNS", func(i *net.Interface) error {
-			return setDnsIgnoreUnusableInterface(i, nameservers)
+	if p.RequiredMultiNICsConfig {
+		WithEachPhysicalInterfaces(netIfaceName, "set DNS", func(i *net.Interface) error {
+			return SetDnsIgnoreUnusableInterface(i, nameservers)
 		})
 	}
 	// resolvconf file is only useful when we have default route interface,
 	// then set DNS on this interface will push change to /etc/resolv.conf file.
-	if netIface != nil && shouldWatchResolvconf() {
+	if netIface != nil && ShouldWatchResolvconf() {
 		servers := make([]netip.Addr, len(nameservers))
 		for i := range nameservers {
 			servers[i] = netip.MustParseAddr(nameservers[i])
 		}
-		p.dnsWg.Add(1)
+		p.DnsWg.Add(1)
 		go func() {
-			defer p.dnsWg.Done()
+			defer p.DnsWg.Done()
 			p.WatchResolvConf(netIface, servers, setResolvConf)
 		}()
 	}
 	if p.DnsWatchdogEnabled() {
-		p.dnsWg.Add(1)
+		p.DnsWg.Add(1)
 		go func() {
-			defer p.dnsWg.Done()
+			defer p.DnsWg.Done()
 			p.DnsWatchdog(netIface, nameservers)
 		}()
 	}
@@ -850,7 +850,7 @@ func (p *Prog) dnsWatchdogDuration() time.Duration {
 // dnsWatchdog watches for DNS changes on Darwin and Windows then re-applying ctrld's settings.
 // This is only works when deactivation pin set.
 func (p *Prog) DnsWatchdog(iface *net.Interface, nameservers []string) {
-	if !requiredMultiNICsConfig() {
+	if !RequiredMultiNICsConfig() {
 		return
 	}
 
@@ -895,12 +895,12 @@ func (p *Prog) DnsWatchdog(iface *net.Interface, nameservers []string) {
 					mainLog.Load().Error().Err(err).Str("iface", iface.Name).Msgf("could not re-apply DNS settings")
 				}
 			}
-			if p.requiredMultiNICsConfig {
+			if p.RequiredMultiNICsConfig {
 				ifaceName := ""
 				if iface != nil {
 					ifaceName = iface.Name
 				}
-				withEachPhysicalInterfaces(ifaceName, "", func(i *net.Interface) error {
+				WithEachPhysicalInterfaces(ifaceName, "", func(i *net.Interface) error {
 					if dnsChanged(i, ns) {
 
 						// Check if the interface already has static DNS servers configured.
@@ -922,7 +922,7 @@ func (p *Prog) DnsWatchdog(iface *net.Interface, nameservers []string) {
 							}
 						}
 
-						if err := setDnsIgnoreUnusableInterface(i, nameservers); err != nil {
+						if err := SetDnsIgnoreUnusableInterface(i, nameservers); err != nil {
 							mainLog.Load().Error().Err(err).Str("iface", i.Name).Msgf("could not re-apply DNS settings")
 						} else {
 							mainLog.Load().Debug().Msgf("re-applying DNS for interface %q successfully", i.Name)
@@ -942,8 +942,8 @@ func (p *Prog) resetDNS(isStart bool, restoreStatic bool) {
 		netIfaceName = netIface.Name
 	}
 	// See corresponding comments in (*Prog).setDNS function.
-	if p.requiredMultiNICsConfig {
-		withEachPhysicalInterfaces(netIfaceName, "reset DNS", resetDnsIgnoreUnusableInterface)
+	if p.RequiredMultiNICsConfig {
+		WithEachPhysicalInterfaces(netIfaceName, "reset DNS", resetDnsIgnoreUnusableInterface)
 	}
 }
 
@@ -1010,7 +1010,7 @@ func (p *Prog) resetDNSForRunningIface(isStart bool, restoreStatic bool) (runnin
 }
 
 func (p *Prog) logInterfacesState() {
-	withEachPhysicalInterfaces("", "", func(i *net.Interface) error {
+	WithEachPhysicalInterfaces("", "", func(i *net.Interface) error {
 		addrs, err := i.Addrs()
 		if err != nil {
 			mainLog.Load().Warn().Str("interface", i.Name).Err(err).Msg("failed to get addresses")
@@ -1331,7 +1331,7 @@ func canBeLocalUpstream(addr string) bool {
 // withEachPhysicalInterfaces runs the function f with each physical interfaces, excluding
 // the interface that matches excludeIfaceName. The context is used to clarify the
 // log message when error happens.
-func withEachPhysicalInterfaces(excludeIfaceName, context string, f func(i *net.Interface) error) {
+func WithEachPhysicalInterfaces(excludeIfaceName, context string, f func(i *net.Interface) error) {
 	validIfacesMap := validInterfacesMap()
 	netmon.ForeachInterface(func(i netmon.Interface, prefixes []netip.Prefix) {
 		// Skip loopback/virtual/down interface.
@@ -1366,7 +1366,7 @@ func withEachPhysicalInterfaces(excludeIfaceName, context string, f func(i *net.
 }
 
 // requiredMultiNicConfig reports whether ctrld needs to set/reset DNS for multiple NICs.
-func requiredMultiNICsConfig() bool {
+func RequiredMultiNICsConfig() bool {
 	switch runtime.GOOS {
 	case "windows", "darwin":
 		return true

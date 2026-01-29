@@ -216,7 +216,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 		dnsWatcherStopCh: make(chan struct{}),
 		apiReloadCh:      make(chan *ctrld.Config),
 		apiForceReloadCh: make(chan struct{}),
-		cfg:              &cfg,
+		cfg:              &Cfg,
 		appCallback:      appCallback,
 	}
 	if homedir == "" {
@@ -276,7 +276,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 	// After s.Run() was called, if ctrld is going to be terminated for any reason,
 	// write msgExit to p.logConn so others (like "ctrld start") won't have to wait for timeout.
 	p.mu.Lock()
-	if err := v.Unmarshal(&cfg); err != nil {
+	if err := v.Unmarshal(&Cfg); err != nil {
 		notifyExitToLogServer()
 		mainLog.Load().Fatal().Msgf("failed to unmarshal config: %v", err)
 	}
@@ -297,7 +297,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 		mainLog.Load().Fatal().Msg("network is not up yet")
 	}
 
-	p.router = router.New(&cfg, cdUID != "")
+	p.router = router.New(&Cfg, cdUID != "")
 	cs, err := newControlServer(filepath.Join(sockDir, ControlSocketName()))
 	if err != nil {
 		mainLog.Load().Warn().Err(err).Msg("could not create control server")
@@ -312,13 +312,13 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 		mainLog.Load().Fatal().Err(err).Msg("failed to perform router pre-run check")
 	}
 
-	oldLogPath := cfg.Service.LogPath
+	oldLogPath := Cfg.Service.LogPath
 	if uid := cdUIDFromProvToken(); uid != "" {
 		cdUID = uid
 	}
 	if cdUID != "" {
 		validateCdUpstreamProtocol()
-		if rc, err := processCDFlags(&cfg); err != nil {
+		if rc, err := processCDFlags(&Cfg); err != nil {
 			if isMobile() {
 				appCallback.Exit(err.Error())
 				return
@@ -339,14 +339,14 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 		}
 	}
 
-	updated := updateListenerConfig(&cfg, notifyExitToLogServer)
+	updated := updateListenerConfig(&Cfg, notifyExitToLogServer)
 
 	if cdUID != "" {
 		processLogAndCacheFlags()
 	}
 
 	if updated {
-		if err := writeConfigFile(&cfg); err != nil {
+		if err := writeConfigFile(&Cfg); err != nil {
 			notifyExitToLogServer()
 			mainLog.Load().Fatal().Err(err).Msg("failed to write config file")
 		} else {
@@ -354,7 +354,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 		}
 	}
 
-	if newLogPath := cfg.Service.LogPath; newLogPath != "" && oldLogPath != newLogPath {
+	if newLogPath := Cfg.Service.LogPath; newLogPath != "" && oldLogPath != newLogPath {
 		// After processCDFlags, log config may change, so reset mainLog and re-init logging.
 		l := zerolog.New(io.Discard)
 		mainLog.Store(&l)
@@ -368,7 +368,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 		initLoggingWithBackup(false)
 	}
 
-	if err := validateConfig(&cfg); err != nil {
+	if err := validateConfig(&Cfg); err != nil {
 		notifyExitToLogServer()
 		os.Exit(1)
 	}
@@ -442,7 +442,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 		// restore static DNS settings or DHCP
 		p.resetDNS(false, true)
 		// Iterate over all physical interfaces and restore static DNS if a saved static config exists.
-		withEachPhysicalInterfaces("", "restore static DNS", func(i *net.Interface) error {
+		WithEachPhysicalInterfaces("", "restore static DNS", func(i *net.Interface) error {
 			file := savedStaticDnsSettingsFilePath(i)
 			if _, err := os.Stat(file); err == nil {
 				if err := restoreDNS(i); err != nil {
@@ -507,13 +507,13 @@ func readConfigFile(writeDefaultConfig, notice bool) bool {
 
 	// If error is viper.ConfigFileNotFoundError, write default config.
 	if errors.As(err, &viper.ConfigFileNotFoundError{}) {
-		if err := v.Unmarshal(&cfg); err != nil {
+		if err := v.Unmarshal(&Cfg); err != nil {
 			mainLog.Load().Fatal().Msgf("failed to unmarshal default config: %v", err)
 		}
 		nop := zerolog.Nop()
-		_, _ = tryUpdateListenerConfig(&cfg, &nop, func() {}, true)
-		addExtraSplitDnsRule(&cfg)
-		if err := writeConfigFile(&cfg); err != nil {
+		_, _ = tryUpdateListenerConfig(&Cfg, &nop, func() {}, true)
+		addExtraSplitDnsRule(&Cfg)
+		if err := writeConfigFile(&Cfg); err != nil {
 			mainLog.Load().Fatal().Msgf("failed to write default config file: %v", err)
 		} else {
 			fp, err := filepath.Abs(defaultConfigFile)
@@ -782,17 +782,17 @@ func processListenFlag() {
 
 func processLogAndCacheFlags() {
 	if logPath != "" {
-		cfg.Service.LogPath = logPath
+		Cfg.Service.LogPath = logPath
 	}
-	if logPath != "" && cfg.Service.LogLevel == "" {
-		cfg.Service.LogLevel = "debug"
+	if logPath != "" && Cfg.Service.LogLevel == "" {
+		Cfg.Service.LogLevel = "debug"
 	}
 
 	if cacheSize != 0 {
-		cfg.Service.CacheEnable = true
-		cfg.Service.CacheSize = cacheSize
+		Cfg.Service.CacheEnable = true
+		Cfg.Service.CacheSize = cacheSize
 	}
-	v.Set("service", cfg.Service)
+	v.Set("service", Cfg.Service)
 }
 
 func netInterface(ifaceName string) (*net.Interface, error) {
@@ -878,13 +878,13 @@ func selfCheckStatus(ctx context.Context, s service.Service, sockDir string) (bo
 		return false, status, err
 	}
 
-	cfg = ctrld.Config{}
-	if err := v.Unmarshal(&cfg); err != nil {
+	Cfg = ctrld.Config{}
+	if err := v.Unmarshal(&Cfg); err != nil {
 		mainLog.Load().Error().Err(err).Msg("failed to update new config")
 		return false, status, err
 	}
 
-	selfCheckExternalDomain := cfg.FirstUpstream().VerifyDomain()
+	selfCheckExternalDomain := Cfg.FirstUpstream().VerifyDomain()
 	if selfCheckExternalDomain == "" {
 		// Nothing to do, return the status as-is.
 		return true, status, nil
@@ -892,7 +892,7 @@ func selfCheckStatus(ctx context.Context, s service.Service, sockDir string) (bo
 
 	mainLog.Load().Debug().Msg("ctrld listener is ready")
 
-	lc := cfg.FirstListener()
+	lc := Cfg.FirstListener()
 	addr := net.JoinHostPort(lc.IP, strconv.Itoa(lc.Port))
 
 	mainLog.Load().Debug().Msgf("performing listener test, sending queries to %s", addr)
@@ -947,7 +947,7 @@ func selfCheckResolveDomain(ctx context.Context, addr, scope string, domain stri
 	}
 	mainLog.Load().Debug().Msgf("self-check against %q failed", domain)
 	// Ping all upstreams to provide better error message to users.
-	for name, uc := range cfg.Upstream {
+	for name, uc := range Cfg.Upstream {
 		if err := uc.ErrorPing(); err != nil {
 			mainLog.Load().Err(err).Msgf("failed to connect to upstream.%s, endpoint: %s", name, uc.Endpoint)
 		}
@@ -1084,7 +1084,7 @@ func uninstall(p *Prog, s service.Service) {
 		p.resetDNS(false, true)
 
 		// Iterate over all physical interfaces and restore DNS if a saved static config exists.
-		withEachPhysicalInterfaces(p.runningIface, "restore static DNS", func(i *net.Interface) error {
+		WithEachPhysicalInterfaces(p.runningIface, "restore static DNS", func(i *net.Interface) error {
 			file := savedStaticDnsSettingsFilePath(i)
 			if _, err := os.Stat(file); err == nil {
 				if err := restoreDNS(i); err != nil {
@@ -1678,8 +1678,8 @@ func doGenerateNextDNSConfig(uid string) error {
 	}
 	mainLog.Load().Notice().Msgf("Generating nextdns config: %s", defaultConfigFile)
 	generateNextDNSConfig(uid)
-	updateListenerConfig(&cfg, func() {})
-	return writeConfigFile(&cfg)
+	updateListenerConfig(&Cfg, func() {})
+	return writeConfigFile(&Cfg)
 }
 
 func noticeWritingControlDConfig() error {

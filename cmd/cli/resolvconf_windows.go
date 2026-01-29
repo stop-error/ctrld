@@ -11,6 +11,6 @@ func setResolvConf(_ *net.Interface, _ []netip.Addr) error {
 }
 
 // shouldWatchResolvconf reports whether ctrld should watch changes to resolv.conf file with given OS configurator.
-func shouldWatchResolvconf() bool {
+func ShouldWatchResolvconf() bool {
 	return false
 }

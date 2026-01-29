@@ -24,7 +24,7 @@ var (
 	logPath           string
 	homedir           string
 	cacheSize         int
-	cfg               ctrld.Config
+	Cfg               ctrld.Config
 	verbose           int
 	silent            bool
 	cdUID             string
@@ -109,11 +109,11 @@ func initConsoleLogging() {
 //
 // Current log file config will also be ignored.
 func initInteractiveLogging() {
-	old := cfg.Service.LogPath
-	cfg.Service.LogPath = ""
+	old := Cfg.Service.LogPath
+	Cfg.Service.LogPath = ""
 	zerolog.TimeFieldFormat = time.RFC3339 + ".000"
 	initLoggingWithBackup(false)
-	cfg.Service.LogPath = old
+	Cfg.Service.LogPath = old
 	l := zerolog.New(io.Discard)
 	ctrld.ProxyLogger.Store(&l)
 }
@@ -126,7 +126,7 @@ func initInteractiveLogging() {
 // wrapper instead of calling this function directly.
 func initLoggingWithBackup(doBackup bool) []io.Writer {
 	var writers []io.Writer
-	if logFilePath := normalizeLogFilePath(cfg.Service.LogPath); logFilePath != "" {
+	if logFilePath := normalizeLogFilePath(Cfg.Service.LogPath); logFilePath != "" {
 		// Create parent directory if necessary.
 		if err := os.MkdirAll(filepath.Dir(logFilePath), 0750); err != nil {
 			mainLog.Load().Error().Msgf("failed to create log path: %v", err)
@@ -159,7 +159,7 @@ func initLoggingWithBackup(doBackup bool) []io.Writer {
 	ctrld.ProxyLogger.Store(&l)
 
 	zerolog.SetGlobalLevel(zerolog.NoticeLevel)
-	logLevel := cfg.Service.LogLevel
+	logLevel := Cfg.Service.LogLevel
 	switch {
 	case silent:
 		zerolog.SetGlobalLevel(zerolog.NoLevel)
@@ -182,10 +182,10 @@ func initLoggingWithBackup(doBackup bool) []io.Writer {
 }
 
 func initCache() {
-	if !cfg.Service.CacheEnable {
+	if !Cfg.Service.CacheEnable {
 		return
 	}
-	if cfg.Service.CacheSize == 0 {
-		cfg.Service.CacheSize = 4096
+	if Cfg.Service.CacheSize == 0 {
+		Cfg.Service.CacheSize = 4096
 	}
 }

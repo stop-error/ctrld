@@ -192,7 +192,7 @@ func (p *Prog) serveDNS(listenerNum string) error {
 	g, ctx := errgroup.WithContext(context.Background())
 	for _, proto := range []string{"udp", "tcp"} {
 		proto := proto
-		if needLocalIPv6Listener() {
+		if NeedLocalIPv6Listener() {
 			g.Go(func() error {
 				s, errCh := runDNSServer(net.JoinHostPort("::1", strconv.Itoa(listenerConfig.Port)), proto, handler)
 				defer s.Shutdown()
@@ -209,7 +209,7 @@ func (p *Prog) serveDNS(listenerNum string) error {
 		}
 		// When we spawn a listener on 127.0.0.1, also spawn listeners on the RFC1918 addresses of the machine
 		// if explicitly set via setting rfc1918 flag, so ctrld could receive queries from LAN clients.
-		if needRFC1918Listeners(listenerConfig) {
+		if NeedRFC1918Listeners(listenerConfig) {
 			g.Go(func() error {
 				for _, addr := range ctrld.Rfc1918Addresses() {
 					func() {
@@ -771,7 +771,7 @@ func ttlFromMsg(msg *dns.Msg) uint32 {
 	return 0
 }
 
-func needLocalIPv6Listener() bool {
+func NeedLocalIPv6Listener() bool {
 	// On Windows, there's no easy way for disabling/removing IPv6 DNS resolver, so we check whether we can
 	// listen on ::1, then spawn a listener for receiving DNS requests.
 	return ctrldnet.SupportsIPv6ListenLocal() && runtime.GOOS == "windows"
@@ -1038,7 +1038,7 @@ func (p *Prog) queryFromSelf(ip string) bool {
 
 // needRFC1918Listeners reports whether ctrld need to spawn listener for RFC 1918 addresses.
 // This is helpful for non-desktop platforms to receive queries from LAN clients.
-func needRFC1918Listeners(lc *ctrld.ListenerConfig) bool {
+func NeedRFC1918Listeners(lc *ctrld.ListenerConfig) bool {
 	return rfc1918 && lc.IP == "127.0.0.1" && lc.Port == 53
 }
 

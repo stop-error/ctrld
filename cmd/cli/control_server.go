@@ -267,9 +267,9 @@ func (p *Prog) registerControlServerHandler() {
 		// p.setDNS is only called when running as a service
 		if !service.Interactive() {
 			<-p.csSetDnsDone
-			if p.csSetDnsOk {
+			if p.CsSetDnsOk {
 				res.Name = p.runningIface
-				res.All = p.requiredMultiNICsConfig
+				res.All = p.RequiredMultiNICsConfig
 				res.OK = true
 			}
 		}

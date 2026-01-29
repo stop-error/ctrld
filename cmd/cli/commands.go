@@ -48,7 +48,7 @@ func initLogCmd() *cobra.Command {
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 
-			p := &Prog{router: router.New(&cfg, false)}
+			p := &Prog{router: router.New(&Cfg, false)}
 			s, _ := newService(p, svcConfig)
 
 			status, err := s.Status()
@@ -101,7 +101,7 @@ func initLogCmd() *cobra.Command {
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 
-			p := &Prog{router: router.New(&cfg, false)}
+			p := &Prog{router: router.New(&Cfg, false)}
 			s, _ := newService(p, svcConfig)
 
 			status, err := s.Status()
@@ -230,8 +230,8 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 			sc.Arguments = append([]string{"run"}, osArgs...)
 
 			p := &Prog{
-				router: router.New(&cfg, cdUID != ""),
-				cfg:    &cfg,
+				router: router.New(&Cfg, cdUID != ""),
+				cfg:    &Cfg,
 			}
 			s, err := newService(p, sc)
 			if err != nil {
@@ -280,7 +280,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 							logger.Debug().Msg("setting DNS successfully")
 							if res.All {
 								// Log that DNS is set for other interfaces.
-								withEachPhysicalInterfaces(
+								WithEachPhysicalInterfaces(
 									name,
 									"set DNS",
 									func(i *net.Interface) error { return nil },
@@ -347,7 +347,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 			// If user run "ctrld start" and ctrld is already installed, starting existing service.
 			if startOnly && isCtrldInstalled {
 				tryReadingConfigWithNotice(false, true)
-				if err := v.Unmarshal(&cfg); err != nil {
+				if err := v.Unmarshal(&Cfg); err != nil {
 					mainLog.Load().Fatal().Msgf("failed to unmarshal config: %v", err)
 				}
 
@@ -361,7 +361,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 				tasks := []task{
 					{func() error {
 						// Save current DNS so we can restore later.
-						withEachPhysicalInterfaces("", "saveCurrentStaticDNS", func(i *net.Interface) error {
+						WithEachPhysicalInterfaces("", "saveCurrentStaticDNS", func(i *net.Interface) error {
 							if err := saveCurrentStaticDNS(i); !errors.Is(err, errSaveCurrentStaticDNSNotSupported) && err != nil {
 								return err
 							}
@@ -414,7 +414,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 
 			tryReadingConfigWithNotice(writeDefaultConfig, true)
 
-			if err := v.Unmarshal(&cfg); err != nil {
+			if err := v.Unmarshal(&Cfg); err != nil {
 				mainLog.Load().Fatal().Msgf("failed to unmarshal config: %v", err)
 			}
 
@@ -443,7 +443,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 				//resetDnsTask(p, s, isCtrldInstalled, currentIface),
 				{func() error {
 					// Save current DNS so we can restore later.
-					withEachPhysicalInterfaces("", "saveCurrentStaticDNS", func(i *net.Interface) error {
+					WithEachPhysicalInterfaces("", "saveCurrentStaticDNS", func(i *net.Interface) error {
 						if err := saveCurrentStaticDNS(i); !errors.Is(err, errSaveCurrentStaticDNSNotSupported) && err != nil {
 							return err
 						}
@@ -606,8 +606,8 @@ func initStopCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			readConfig(false)
-			v.Unmarshal(&cfg)
-			p := &Prog{router: router.New(&cfg, runInCdMode())}
+			v.Unmarshal(&Cfg)
+			p := &Prog{router: router.New(&Cfg, runInCdMode())}
 			s, err := newService(p, svcConfig)
 			if err != nil {
 				mainLog.Load().Error().Msg(err.Error())
@@ -616,7 +616,7 @@ func initStopCmd() *cobra.Command {
 			p.preRun()
 			if ir := runningIface(s); ir != nil {
 				p.runningIface = ir.Name
-				p.requiredMultiNICsConfig = ir.All
+				p.RequiredMultiNICsConfig = ir.All
 			}
 
 			initInteractiveLogging()
@@ -691,11 +691,11 @@ func initRestartCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			readConfig(false)
-			v.Unmarshal(&cfg)
+			v.Unmarshal(&Cfg)
 			cdUID = curCdUID()
 			cdMode := cdUID != ""
 
-			p := &Prog{router: router.New(&cfg, cdMode)}
+			p := &Prog{router: router.New(&Cfg, cdMode)}
 			s, err := newService(p, svcConfig)
 			if err != nil {
 				mainLog.Load().Error().Msg(err.Error())
@@ -711,7 +711,7 @@ func initRestartCmd() *cobra.Command {
 			p.preRun()
 			if ir := runningIface(s); ir != nil {
 				p.runningIface = ir.Name
-				p.requiredMultiNICsConfig = ir.All
+				p.RequiredMultiNICsConfig = ir.All
 			}
 
 			initInteractiveLogging()
@@ -820,7 +820,7 @@ func initReloadCmd(restartCmd *cobra.Command) *cobra.Command {
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 
-			p := &Prog{router: router.New(&cfg, false)}
+			p := &Prog{router: router.New(&Cfg, false)}
 			s, _ := newService(p, svcConfig)
 
 			status, err := s.Status()
@@ -944,8 +944,8 @@ NOTE: Uninstalling will set DNS to values provided by DHCP.`,
 		Args: cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			readConfig(false)
-			v.Unmarshal(&cfg)
-			p := &Prog{router: router.New(&cfg, runInCdMode())}
+			v.Unmarshal(&Cfg)
+			p := &Prog{router: router.New(&Cfg, runInCdMode())}
 			s, err := newService(p, svcConfig)
 			if err != nil {
 				mainLog.Load().Error().Msg(err.Error())
@@ -957,7 +957,7 @@ NOTE: Uninstalling will set DNS to values provided by DHCP.`,
 			p.preRun()
 			if ir := runningIface(s); ir != nil {
 				p.runningIface = ir.Name
-				p.requiredMultiNICsConfig = ir.All
+				p.RequiredMultiNICsConfig = ir.All
 			}
 			if err := checkDeactivationPin(s, nil); isCheckDeactivationPinErr(err) {
 				os.Exit(deactivationPinInvalidExitCode)
@@ -969,7 +969,7 @@ NOTE: Uninstalling will set DNS to values provided by DHCP.`,
 				files = append(files, v.ConfigFileUsed())
 				// Log file and backup log file.
 				// For safety, only process if log file path is absolute.
-				if logFile := normalizeLogFilePath(cfg.Service.LogPath); filepath.IsAbs(logFile) {
+				if logFile := normalizeLogFilePath(Cfg.Service.LogPath); filepath.IsAbs(logFile) {
 					files = append(files, logFile)
 					oldLogFile := logFile + oldLogSuffix
 					if _, err := os.Stat(oldLogFile); err == nil {
@@ -982,7 +982,7 @@ NOTE: Uninstalling will set DNS to values provided by DHCP.`,
 					files = append(files, filepath.Join(dir, ctrldLogUnixSock))
 				}
 				// Static DNS settings files.
-				withEachPhysicalInterfaces("", "", func(i *net.Interface) error {
+				WithEachPhysicalInterfaces("", "", func(i *net.Interface) error {
 					file := savedStaticDnsSettingsFilePath(i)
 					if _, err := os.Stat(file); err == nil {
 						files = append(files, file)
@@ -1061,7 +1061,7 @@ func initInterfacesCmd() *cobra.Command {
 		Short: "List network interfaces of the host",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			withEachPhysicalInterfaces("", "Interface list", func(i *net.Interface) error {
+			WithEachPhysicalInterfaces("", "Interface list", func(i *net.Interface) error {
 				fmt.Printf("Index : %d\n", i.Index)
 				fmt.Printf("Name  : %s\n", i.Name)
 				var status string
@@ -1121,7 +1121,7 @@ func initClientsCmd() *cobra.Command {
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 
-			p := &Prog{router: router.New(&cfg, false)}
+			p := &Prog{router: router.New(&Cfg, false)}
 			s, _ := newService(p, svcConfig)
 
 			status, err := s.Status()
@@ -1233,8 +1233,8 @@ func initUpgradeCmd() *cobra.Command {
 			*sc = *svcConfig
 			sc.Executable = bin
 			readConfig(false)
-			v.Unmarshal(&cfg)
-			p := &Prog{router: router.New(&cfg, runInCdMode())}
+			v.Unmarshal(&Cfg)
+			p := &Prog{router: router.New(&Cfg, runInCdMode())}
 			s, err := newService(p, sc)
 			if err != nil {
 				mainLog.Load().Error().Msg(err.Error())
@@ -1246,7 +1246,7 @@ func initUpgradeCmd() *cobra.Command {
 			p.preRun()
 			if ir := runningIface(s); ir != nil {
 				p.runningIface = ir.Name
-				p.requiredMultiNICsConfig = ir.All
+				p.RequiredMultiNICsConfig = ir.All
 			}
 
 			svcInstalled := true
