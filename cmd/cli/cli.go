@@ -440,7 +440,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 	}
 	p.onStopped = append(p.onStopped, func() {
 		// restore static DNS settings or DHCP
-		p.resetDNS(false, true)
+		p.ResetDNS(false, true)
 		// Iterate over all physical interfaces and restore static DNS if a saved static config exists.
 		WithEachPhysicalInterfaces("", "restore static DNS", func(i *net.Interface) error {
 			file := savedStaticDnsSettingsFilePath(i)
@@ -1920,7 +1920,7 @@ func uninstallInvalidCdUID(p *Prog, logger zerolog.Logger, doStop bool) bool {
 		return false
 	}
 	// restore static DNS settings or DHCP
-	p.resetDNS(false, true)
+	p.ResetDNS(false, true)
 
 	tasks := []task{{s.Uninstall, true, "Uninstall"}}
 	if doTasks(tasks) {

@@ -1079,7 +1079,7 @@ func initInterfacesCmd() *cobra.Command {
 					}
 					fmt.Printf("        %v\n", ipaddr)
 				}
-				nss, err := currentStaticDNS(i)
+				nss, err := CurrentStaticDNS(i)
 				if err != nil {
 					MainLog.Load().Warn().Err(err).Msg("failed to get DNS")
 				}
