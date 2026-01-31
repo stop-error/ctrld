@@ -797,7 +797,7 @@ func processLogAndCacheFlags() {
 
 func NetInterface(ifaceName string) (*net.Interface, error) {
 	if ifaceName == "auto" {
-		ifaceName = defaultIfaceName()
+		ifaceName = DefaultIfaceName()
 	}
 	var iface *net.Interface
 	err := netmon.ForeachInterface(func(i netmon.Interface, prefixes []netip.Prefix) {
@@ -814,7 +814,7 @@ func NetInterface(ifaceName string) (*net.Interface, error) {
 	return iface, err
 }
 
-func defaultIfaceName() string {
+func DefaultIfaceName() string {
 	if ifaceName := router.DefaultInterfaceName(); ifaceName != "" {
 		return ifaceName
 	}
@@ -1458,7 +1458,7 @@ func tryUpdateListenerConfig(cfg *ctrld.Config, infoLogger *zerolog.Logger, noti
 			if ip := net.ParseIP(listener.IP); ip != nil && ip.IsLoopback() && ip.String() != "127.0.0.1" {
 				logMsg(il.Info(), n, "using loopback interface do not work with systemd-resolved")
 				found := false
-				if netIface, _ := net.InterfaceByName(defaultIfaceName()); netIface != nil {
+				if netIface, _ := net.InterfaceByName(DefaultIfaceName()); netIface != nil {
 					addrs, _ := netIface.Addrs()
 					for _, addr := range addrs {
 						if netIP, ok := addr.(*net.IPNet); ok && netIP.IP.To4() != nil {

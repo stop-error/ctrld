@@ -271,9 +271,9 @@ func (p *Prog) runWait() {
 	}
 }
 
-func (p *Prog) preRun() {
+func (p *Prog) PreRun() {
 	if iface == "auto" {
-		iface = defaultIfaceName()
+		iface = DefaultIfaceName()
 		p.RequiredMultiNICsConfig = RequiredMultiNICsConfig()
 	}
 	p.RunningIface = iface
@@ -449,7 +449,7 @@ func (p *Prog) run(reload bool, reloadCh chan struct{}) {
 	// Wait the caller to signal that we can do our logic.
 	<-p.waitCh
 	if !reload {
-		p.preRun()
+		p.PreRun()
 	}
 	numListeners := len(p.cfg.Listener)
 	if !reload {

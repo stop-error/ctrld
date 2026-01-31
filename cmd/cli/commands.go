@@ -238,7 +238,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 				MainLog.Load().Error().Msg(err.Error())
 				return
 			}
-			p.preRun()
+			p.PreRun()
 
 			status, err := s.Status()
 			isCtrldRunning := status == service.StatusRunning
@@ -263,7 +263,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 				if cc := newSocketControlClient(ctx, s, sockDir); cc != nil {
 					if resp, _ := cc.post(ifacePath, nil); resp != nil && resp.StatusCode == http.StatusOK {
 						if iface == "auto" {
-							iface = defaultIfaceName()
+							iface = DefaultIfaceName()
 						}
 						res := &ifaceResponse{}
 						if err := json.NewDecoder(resp.Body).Decode(res); err != nil {
@@ -613,7 +613,7 @@ func initStopCmd() *cobra.Command {
 				MainLog.Load().Error().Msg(err.Error())
 				return
 			}
-			p.preRun()
+			p.PreRun()
 			if ir := runningIface(s); ir != nil {
 				p.RunningIface = ir.Name
 				p.RequiredMultiNICsConfig = ir.All
@@ -708,7 +708,7 @@ func initRestartCmd() *cobra.Command {
 			if iface == "" {
 				iface = "auto"
 			}
-			p.preRun()
+			p.PreRun()
 			if ir := runningIface(s); ir != nil {
 				p.RunningIface = ir.Name
 				p.RequiredMultiNICsConfig = ir.All
@@ -954,7 +954,7 @@ NOTE: Uninstalling will set DNS to values provided by DHCP.`,
 			if iface == "" {
 				iface = "auto"
 			}
-			p.preRun()
+			p.PreRun()
 			if ir := runningIface(s); ir != nil {
 				p.RunningIface = ir.Name
 				p.RequiredMultiNICsConfig = ir.All
@@ -1243,7 +1243,7 @@ func initUpgradeCmd() *cobra.Command {
 			if iface == "" {
 				iface = "auto"
 			}
-			p.preRun()
+			p.PreRun()
 			if ir := runningIface(s); ir != nil {
 				p.RunningIface = ir.Name
 				p.RequiredMultiNICsConfig = ir.All

@@ -12,7 +12,7 @@ import (
 )
 
 func Test_currentStaticDNS(t *testing.T) {
-	iface, err := net.InterfaceByName(defaultIfaceName())
+	iface, err := net.InterfaceByName(DefaultIfaceName())
 	if err != nil {
 		t.Fatal(err)
 	}
