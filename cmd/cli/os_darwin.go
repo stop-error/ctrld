@@ -61,7 +61,7 @@ func SetDNS(iface *net.Interface, nameservers []string) error {
 
 // resetDnsIgnoreUnusableInterface likes resetDNS, but return a nil error if the interface is not usable.
 func resetDnsIgnoreUnusableInterface(iface *net.Interface) error {
-	if err := resetDNS(iface); err != nil {
+	if err := ResetDNS(iface); err != nil {
 		// TODO: investiate whether we can detect this without relying on error message.
 		if strings.Contains(err.Error(), " is not a recognized network service") {
 			return nil
@@ -72,7 +72,7 @@ func resetDnsIgnoreUnusableInterface(iface *net.Interface) error {
 }
 
 // TODO(cuonglm): use system API
-func resetDNS(iface *net.Interface) error {
+func ResetDNS(iface *net.Interface) error {
 	cmd := "networksetup"
 	args := []string{"-setdnsservers", iface.Name, "empty"}
 	if out, err := exec.Command(cmd, args...).CombinedOutput(); err != nil {
@@ -84,7 +84,7 @@ func resetDNS(iface *net.Interface) error {
 // restoreDNS restores the DNS settings of the given interface.
 // this should only be executed upon turning off the ctrld service.
 func restoreDNS(iface *net.Interface) (err error) {
-	if ns := savedStaticNameservers(iface); len(ns) > 0 {
+	if ns := SavedStaticNameservers(iface); len(ns) > 0 {
 		err = SetDNS(iface, ns)
 	}
 	return err
@@ -95,7 +95,7 @@ func currentDNS(_ *net.Interface) []string {
 }
 
 // currentStaticDNS returns the current static DNS settings of given interface.
-func currentStaticDNS(iface *net.Interface) ([]string, error) {
+func CurrentStaticDNS(iface *net.Interface) ([]string, error) {
 	cmd := "networksetup"
 	args := []string{"-getdnsservers", iface.Name}
 	out, err := exec.Command(cmd, args...).Output()
