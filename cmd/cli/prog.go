@@ -272,6 +272,7 @@ func (p *Prog) runWait() {
 }
 
 func (p *Prog) PreRun() {
+	iface = "auto" 
 	if iface == "auto" {
 		iface = DefaultIfaceName()
 		p.RequiredMultiNICsConfig = RequiredMultiNICsConfig()
