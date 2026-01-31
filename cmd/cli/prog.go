@@ -773,13 +773,11 @@ func (p *Prog) SetDNS() {
 			p.WatchResolvConf(netIface, servers, setResolvConf)
 		}()
 	}
-	if p.DnsWatchdogEnabled() {
-		p.DnsWg.Add(1)
-		go func() {
-			defer p.DnsWg.Done()
-			p.DnsWatchdog(netIface, nameservers)
-		}()
-	}
+	p.DnsWg.Add(1)
+	go func() {
+		defer p.DnsWg.Done()
+		p.DnsWatchdog(netIface, nameservers)
+	}()
 }
 
 func (p *Prog) SetDnsForRunningIface(nameservers []string) (runningIface *net.Interface) {
