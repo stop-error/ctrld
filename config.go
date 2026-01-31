@@ -233,7 +233,7 @@ type ServiceConfig struct {
 	MetricsQueryStats       bool           `mapstructure:"metrics_query_stats" toml:"metrics_query_stats,omitempty"`
 	MetricsListener         string         `mapstructure:"metrics_listener" toml:"metrics_listener,omitempty"`
 	DnsWatchdogEnabled      *bool          `mapstructure:"dns_watchdog_enabled" toml:"dns_watchdog_enabled,omitempty"`
-	DnsWatchdogInvterval    *time.Duration 
+	DnsWatchdogInvterval    *time.Duration `mapstructure:"dns_watchdog_interval" toml:"dns_watchdog_interval,omitempty"`
 	RefetchTime             *int           `mapstructure:"refetch_time" toml:"refetch_time,omitempty"`
 	ForceRefetchWaitTime    *int           `mapstructure:"force_refetch_wait_time" toml:"force_refetch_wait_time,omitempty"`
 	LeakOnUpstreamFailure   *bool          `mapstructure:"leak_on_upstream_failure" toml:"leak_on_upstream_failure,omitempty"`

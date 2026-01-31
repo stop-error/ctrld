@@ -857,7 +857,7 @@ func (p *Prog) DnsWatchdog(iface *net.Interface, nameservers []string) {
 
 	ns := nameservers
 	slices.Sort(ns)
-	ticker := time.NewTicker(p.dnsWatchdogDuration())
+	ticker := time.NewTicker(20 * time.Second)
 
 	for {
 		select {

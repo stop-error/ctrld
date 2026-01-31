@@ -25,7 +25,7 @@ func (p *Prog) watchLinkState(ctx context.Context) {
 			}
 			if lu.Change&unix.IFF_UP != 0 {
 				MainLog.Load().Debug().Msgf("link state changed, re-bootstrapping")
-				for _, uc := range p.cfg.Upstream {
+				for _, uc := range p.Cfg.Upstream {
 					uc.ReBootstrap()
 				}
 			}
