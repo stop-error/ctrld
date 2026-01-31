@@ -715,32 +715,32 @@ func (p *Prog) SetDNS() {
 		p.CsSetDnsOk = setDnsOK
 	}()
 
-	if Cfg.Listener == nil {
-		return
-	}
-	lc := Cfg.FirstListener()
-	if lc == nil {
-		return
-	}
-	ns := lc.IP
-	switch {
-	case lc.IsDirectDnsListener():
-		// If ctrld is direct listener, use 127.0.0.1 as nameserver.
-		ns = "127.0.0.1"
-	case lc.Port != 53:
-		ns = "127.0.0.1"
-		if resolver := router.LocalResolverIP(); resolver != "" {
-			ns = resolver
-		}
-	default:
-		// If we ever reach here, it means ctrld is running on lc.IP port 53,
-		// so we could just use lc.IP as nameserver.
-	}
+	// if Cfg.Listener == nil {
+	// 	return
+	// }
+	// lc := Cfg.FirstListener()
+	// if lc == nil {
+	// 	return
+	// }
+	ns := "127.0.0.3"
+	// switch {
+	// case lc.IsDirectDnsListener():
+	// 	// If ctrld is direct listener, use 127.0.0.1 as nameserver.
+	// 	ns = "127.0.0.1"
+	// case lc.Port != 53:
+	// 	ns = "127.0.0.1"
+	// 	if resolver := router.LocalResolverIP(); resolver != "" {
+	// 		ns = resolver
+	// 	}
+	// default:
+	// 	// If we ever reach here, it means ctrld is running on lc.IP port 53,
+	// 	// so we could just use lc.IP as nameserver.
+	// }
 
 	nameservers := []string{ns}
-	if NeedRFC1918Listeners(lc) {
-		nameservers = append(nameservers, ctrld.Rfc1918Addresses()...)
-	}
+	// if NeedRFC1918Listeners(lc) {
+	// 	nameservers = append(nameservers, ctrld.Rfc1918Addresses()...)
+	// }
 	if NeedLocalIPv6Listener() {
 		nameservers = append(nameservers, "::1")
 	}
