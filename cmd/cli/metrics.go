@@ -112,7 +112,7 @@ func (p *Prog) runMetricsServer(ctx context.Context, reloadCh chan struct{}) {
 		reg.MustRegister(statsClientQueriesCount)
 	}
 
-	addr := p.cfg.Service.MetricsListener
+	addr := p.Cfg.Service.MetricsListener
 	ms, err := newMetricsServer(addr, reg)
 	if err != nil {
 		MainLog.Load().Warn().Err(err).Msg("could not create new metrics server")

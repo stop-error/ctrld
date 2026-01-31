@@ -85,7 +85,7 @@ type upstreamForResult struct {
 }
 
 func (p *Prog) serveDNS(listenerNum string) error {
-	listenerConfig := p.cfg.Listener[listenerNum]
+	listenerConfig := p.Cfg.Listener[listenerNum]
 	// make sure ip is allocated
 	if allocErr := p.allocateIP(listenerConfig.IP); allocErr != nil {
 		MainLog.Load().Error().Err(allocErr).Str("ip", listenerConfig.IP).Msg("serveUDP: failed to allocate listen ip")
@@ -101,7 +101,7 @@ func (p *Prog) serveDNS(listenerNum string) error {
 			_ = w.WriteMsg(answer)
 			return
 		}
-		listenerConfig := p.cfg.Listener[listenerNum]
+		listenerConfig := p.Cfg.Listener[listenerNum]
 		reqId := requestID()
 		ctx := context.WithValue(context.Background(), ctrld.ReqIdCtxKey{}, reqId)
 		if !listenerConfig.AllowWanClients && isWanClient(w.RemoteAddr()) {
@@ -132,7 +132,7 @@ func (p *Prog) serveDNS(listenerNum string) error {
 		}
 		remoteIP, _, _ := net.SplitHostPort(w.RemoteAddr().String())
 		ci := p.getClientInfo(remoteIP, m)
-		ci.ClientIDPref = p.cfg.Service.ClientIDPref
+		ci.ClientIDPref = p.Cfg.Service.ClientIDPref
 		stripClientSubnet(m)
 		remoteAddr := spoofRemoteAddr(w.RemoteAddr(), ci)
 		fmtSrcToDest := fmtRemoteToLocal(listenerNum, ci.Hostname, remoteAddr.String())
@@ -292,7 +292,7 @@ networkRules:
 	for _, rule := range lc.Policy.Networks {
 		for source, targets := range rule {
 			networkNum := strings.TrimPrefix(source, "network.")
-			nc := p.cfg.Network[networkNum]
+			nc := p.Cfg.Network[networkNum]
 			if nc == nil {
 				continue
 			}
@@ -423,7 +423,7 @@ func (p *Prog) proxyLanHostnameQuery(ctx context.Context, msg *dns.Msg) *dns.Msg
 func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 	var staleAnswer *dns.Msg
 	upstreams := req.ufr.upstreams
-	serveStaleCache := p.cache != nil && p.cfg.Service.CacheServeStale
+	serveStaleCache := p.cache != nil && p.Cfg.Service.CacheServeStale
 	upstreamConfigs := p.upstreamConfigsFromUpstreamNumbers(upstreams)
 
 	if len(upstreamConfigs) == 0 {
@@ -597,7 +597,7 @@ func (p *Prog) proxy(ctx context.Context, req *proxyRequest) *proxyResponse {
 			ttl := ttlFromMsg(answer)
 			now := time.Now()
 			expired := now.Add(time.Duration(ttl) * time.Second)
-			if cachedTTL := p.cfg.Service.CacheTTLOverride; cachedTTL > 0 {
+			if cachedTTL := p.Cfg.Service.CacheTTLOverride; cachedTTL > 0 {
 				expired = now.Add(time.Duration(cachedTTL) * time.Second)
 			}
 			setCachedAnswerTTL(answer, now, expired)
@@ -671,7 +671,7 @@ func (p *Prog) upstreamConfigsFromUpstreamNumbers(upstreams []string) []*ctrld.U
 	upstreamConfigs := make([]*ctrld.UpstreamConfig, 0, len(upstreams))
 	for _, upstream := range upstreams {
 		upstreamNum := strings.TrimPrefix(upstream, upstreamPrefix)
-		upstreamConfigs = append(upstreamConfigs, p.cfg.Upstream[upstreamNum])
+		upstreamConfigs = append(upstreamConfigs, p.Cfg.Upstream[upstreamNum])
 	}
 	return upstreamConfigs
 }
@@ -1001,7 +1001,7 @@ func (p *Prog) forceFetchingAPI(domain string) {
 	_ = p.apiForceReloadGroup.DoChan("force_sync_api", func() (interface{}, error) {
 		p.apiForceReloadCh <- struct{}{}
 		// Wait here to prevent abusing API if we are flooded.
-		time.Sleep(timeDurationOrDefault(p.cfg.Service.ForceRefetchWaitTime, 30) * time.Second)
+		time.Sleep(timeDurationOrDefault(p.Cfg.Service.ForceRefetchWaitTime, 30) * time.Second)
 		return nil, nil
 	})
 }
@@ -1588,7 +1588,7 @@ func (p *Prog) buildRecoveryUpstreams(reason RecoveryReason) map[string]*ctrld.U
 		upstreams[upstreamOS] = osUpstreamConfig
 	case RecoveryReasonNetworkChange, RecoveryReasonRegularFailure:
 		// Use all configured upstreams except any OS type.
-		for k, uc := range p.cfg.Upstream {
+		for k, uc := range p.Cfg.Upstream {
 			if uc.Type != ctrld.ResolverTypeOS {
 				upstreams[upstreamPrefix+k] = uc
 			}

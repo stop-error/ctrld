@@ -216,7 +216,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 		dnsWatcherStopCh: make(chan struct{}),
 		apiReloadCh:      make(chan *ctrld.Config),
 		apiForceReloadCh: make(chan struct{}),
-		cfg:              &Cfg,
+		Cfg:              &Cfg,
 		appCallback:      appCallback,
 	}
 	if homedir == "" {
@@ -400,7 +400,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 	}
 
 	p.onStarted = append(p.onStarted, func() {
-		for _, lc := range p.cfg.Listener {
+		for _, lc := range p.Cfg.Listener {
 			if shouldAllocateLoopbackIP(lc.IP) {
 				if err := allocateIP(lc.IP); err != nil {
 					MainLog.Load().Error().Err(err).Msgf("could not allocate IP: %s", lc.IP)
@@ -411,7 +411,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 		_ = ConfigureWindowsServiceFailureActions(ctrldServiceName)
 	})
 	p.onStopped = append(p.onStopped, func() {
-		for _, lc := range p.cfg.Listener {
+		for _, lc := range p.Cfg.Listener {
 			if shouldAllocateLoopbackIP(lc.IP) {
 				if err := deAllocateIP(lc.IP); err != nil {
 					MainLog.Load().Error().Err(err).Msgf("could not de-allocate IP: %s", lc.IP)

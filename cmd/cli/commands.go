@@ -231,7 +231,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 
 			p := &Prog{
 				router: router.New(&Cfg, cdUID != ""),
-				cfg:    &Cfg,
+				Cfg:    &Cfg,
 			}
 			s, err := newService(p, sc)
 			if err != nil {

@@ -110,7 +110,7 @@ type Prog struct {
 	dnsWatcherStopCh     chan struct{}
 	rc                   *controld.ResolverConfig
 
-	cfg                       *ctrld.Config
+	Cfg                       *ctrld.Config
 	localUpstreams            []string
 	ptrNameservers            []string
 	appCallback               *AppCallback
@@ -159,7 +159,7 @@ func (p *Prog) Start(s service.Service) error {
 // runWait runs ctrld components, waiting for signal to reload.
 func (p *Prog) runWait() {
 	p.mu.Lock()
-	p.cfg = &Cfg
+	p.Cfg = &Cfg
 	p.mu.Unlock()
 	reloadSigCh := make(chan os.Signal, 1)
 	notifyReloadSigCh(reloadSigCh)
@@ -228,7 +228,7 @@ func (p *Prog) runWait() {
 		waitOldRunDone()
 
 		p.mu.Lock()
-		curListener := p.cfg.Listener
+		curListener := p.Cfg.Listener
 		p.mu.Unlock()
 
 		for n, lc := range newCfg.Listener {
@@ -259,7 +259,7 @@ func (p *Prog) runWait() {
 		p.setupUpstream(newCfg)
 
 		p.mu.Lock()
-		*p.cfg = *newCfg
+		*p.Cfg = *newCfg
 		p.mu.Unlock()
 
 		logger.Notice().Msg("reloading config successfully")
@@ -303,7 +303,7 @@ func (p *Prog) apiConfigReload() {
 		return
 	}
 
-	ticker := time.NewTicker(timeDurationOrDefault(p.cfg.Service.RefetchTime, 3600) * time.Second)
+	ticker := time.NewTicker(timeDurationOrDefault(p.Cfg.Service.RefetchTime, 3600) * time.Second)
 	defer ticker.Stop()
 
 	logger := MainLog.Load().With().Str("mode", "api-reload").Logger()
@@ -452,7 +452,7 @@ func (p *Prog) run(reload bool, reloadCh chan struct{}) {
 	if !reload {
 		p.PreRun()
 	}
-	numListeners := len(p.cfg.Listener)
+	numListeners := len(p.Cfg.Listener)
 	if !reload {
 		p.started = make(chan struct{}, numListeners)
 		if p.cs != nil {
@@ -469,15 +469,15 @@ func (p *Prog) run(reload bool, reloadCh chan struct{}) {
 	p.lanLoopGuard = newLoopGuard()
 	p.ptrLoopGuard = newLoopGuard()
 	p.cacheFlushDomainsMap = nil
-	p.metricsQueryStats.Store(p.cfg.Service.MetricsQueryStats)
-	if p.cfg.Service.CacheEnable {
-		cacher, err := dnscache.NewLRUCache(p.cfg.Service.CacheSize)
+	p.metricsQueryStats.Store(p.Cfg.Service.MetricsQueryStats)
+	if p.Cfg.Service.CacheEnable {
+		cacher, err := dnscache.NewLRUCache(p.Cfg.Service.CacheSize)
 		if err != nil {
 			MainLog.Load().Error().Err(err).Msg("failed to create cacher, caching is disabled")
 		} else {
 			p.cache = cacher
 			p.cacheFlushDomainsMap = make(map[string]struct{}, 256)
-			for _, domain := range p.cfg.Service.CacheFlushDomains {
+			for _, domain := range p.Cfg.Service.CacheFlushDomains {
 				p.cacheFlushDomainsMap[canonicalName(domain)] = struct{}{}
 			}
 		}
@@ -488,9 +488,9 @@ func (p *Prog) run(reload bool, reloadCh chan struct{}) {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(len(p.cfg.Listener))
+	wg.Add(len(p.Cfg.Listener))
 
-	for _, nc := range p.cfg.Network {
+	for _, nc := range p.Cfg.Network {
 		for _, cidr := range nc.Cidrs {
 			_, ipNet, err := net.ParseCIDR(cidr)
 			if err != nil {
@@ -501,11 +501,11 @@ func (p *Prog) run(reload bool, reloadCh chan struct{}) {
 		}
 	}
 
-	p.um = newUpstreamMonitor(p.cfg)
+	p.um = newUpstreamMonitor(p.Cfg)
 
 	if !reload {
 		p.sema = &chanSemaphore{ready: make(chan struct{}, defaultSemaphoreCap)}
-		if mcr := p.cfg.Service.MaxConcurrentRequests; mcr != nil {
+		if mcr := p.Cfg.Service.MaxConcurrentRequests; mcr != nil {
 			n := *mcr
 			if n == 0 {
 				p.sema = &noopSemaphore{}
@@ -513,7 +513,7 @@ func (p *Prog) run(reload bool, reloadCh chan struct{}) {
 				p.sema = &chanSemaphore{ready: make(chan struct{}, n)}
 			}
 		}
-		p.setupUpstream(p.cfg)
+		p.setupUpstream(p.Cfg)
 		p.setupClientInfoDiscover(defaultRouteIP())
 	}
 
@@ -540,12 +540,12 @@ func (p *Prog) run(reload bool, reloadCh chan struct{}) {
 		}()
 	}
 
-	for listenerNum := range p.cfg.Listener {
-		p.cfg.Listener[listenerNum].Init()
+	for listenerNum := range p.Cfg.Listener {
+		p.Cfg.Listener[listenerNum].Init()
 		if !reload {
 			go func(listenerNum string) {
-				listenerConfig := p.cfg.Listener[listenerNum]
-				upstreamConfig := p.cfg.Upstream[listenerNum]
+				listenerConfig := p.Cfg.Listener[listenerNum]
+				upstreamConfig := p.Cfg.Upstream[listenerNum]
 				if upstreamConfig == nil {
 					MainLog.Load().Warn().Msgf("no default upstream for: [listener.%s]", listenerNum)
 				}
@@ -613,9 +613,9 @@ func (p *Prog) run(reload bool, reloadCh chan struct{}) {
 // setupClientInfoDiscover performs necessary works for running client info discover.
 func (p *Prog) setupClientInfoDiscover(selfIP string) {
 	p.ciTable = clientinfo.NewTable(&Cfg, selfIP, cdUID, p.ptrNameservers)
-	if leaseFile := p.cfg.Service.DHCPLeaseFile; leaseFile != "" {
+	if leaseFile := p.Cfg.Service.DHCPLeaseFile; leaseFile != "" {
 		MainLog.Load().Debug().Msgf("watching custom lease file: %s", leaseFile)
-		format := ctrld.LeaseFileFormat(p.cfg.Service.DHCPLeaseFileFormat)
+		format := ctrld.LeaseFileFormat(p.Cfg.Service.DHCPLeaseFileFormat)
 		p.ciTable.AddLeaseFile(leaseFile, format)
 	}
 	if leaseFiles := dnsmasq.AdditionalLeaseFiles(); len(leaseFiles) > 0 {
@@ -634,7 +634,7 @@ func (p *Prog) runClientInfoDiscover(ctx context.Context) {
 
 // metricsEnabled reports whether prometheus exporter is enabled/disabled.
 func (p *Prog) metricsEnabled() bool {
-	return p.cfg.Service.MetricsQueryStats || p.cfg.Service.MetricsListener != ""
+	return p.Cfg.Service.MetricsQueryStats || p.Cfg.Service.MetricsListener != ""
 }
 
 func (p *Prog) Stop(s service.Service) error {
@@ -690,7 +690,7 @@ func (p *Prog) stopDnsWatchers() {
 func (p *Prog) allocateIP(ip string) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if !p.cfg.Service.AllocateIP {
+	if !p.Cfg.Service.AllocateIP {
 		return nil
 	}
 	return allocateIP(ip)
@@ -699,10 +699,10 @@ func (p *Prog) allocateIP(ip string) error {
 func (p *Prog) deAllocateIP() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if !p.cfg.Service.AllocateIP {
+	if !p.Cfg.Service.AllocateIP {
 		return nil
 	}
-	for _, lc := range p.cfg.Listener {
+	for _, lc := range p.Cfg.Listener {
 		if err := deAllocateIP(lc.IP); err != nil {
 			return err
 		}
@@ -830,7 +830,7 @@ func (p *Prog) SetDnsForRunningIface(nameservers []string) (runningIface *net.In
 
 // dnsWatchdogEnabled reports whether DNS watchdog is enabled.
 func (p *Prog) DnsWatchdogEnabled() bool {
-	if ptr := p.cfg.Service.DnsWatchdogEnabled; ptr != nil {
+	if ptr := p.Cfg.Service.DnsWatchdogEnabled; ptr != nil {
 		return *ptr
 	}
 	return true
@@ -838,7 +838,7 @@ func (p *Prog) DnsWatchdogEnabled() bool {
 
 // dnsWatchdogDuration returns the time duration between each DNS watchdog loop.
 func (p *Prog) dnsWatchdogDuration() time.Duration {
-	if ptr := p.cfg.Service.DnsWatchdogInvterval; ptr != nil {
+	if ptr := p.Cfg.Service.DnsWatchdogInvterval; ptr != nil {
 		if (*ptr).Seconds() > 0 {
 			return *ptr
 		}
@@ -1556,7 +1556,7 @@ func selfUpgradeCheck(vt string, cv *semver.Version, logger *zerolog.Logger) boo
 // leakOnUpstreamFailure reports whether ctrld should initiate a recovery flow
 // when upstream failures occur.
 func (p *Prog) leakOnUpstreamFailure() bool {
-	if ptr := p.cfg.Service.LeakOnUpstreamFailure; ptr != nil {
+	if ptr := p.Cfg.Service.LeakOnUpstreamFailure; ptr != nil {
 		return *ptr
 	}
 	// Default is false on routers, since this leaking is only useful for devices that move between networks.

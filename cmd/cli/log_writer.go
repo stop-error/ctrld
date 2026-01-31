@@ -148,7 +148,7 @@ func (p *Prog) needInternalLogging() bool {
 		return false
 	}
 	// Do not run if there's already log file.
-	if p.cfg.Service.LogPath != "" {
+	if p.Cfg.Service.LogPath != "" {
 		return false
 	}
 	return true
@@ -184,10 +184,10 @@ func (p *Prog) logReader() (*logReader, error) {
 		}
 		return lr, nil
 	}
-	if p.cfg.Service.LogPath == "" {
+	if p.Cfg.Service.LogPath == "" {
 		return &logReader{r: io.NopCloser(strings.NewReader(""))}, nil
 	}
-	f, err := os.Open(normalizeLogFilePath(p.cfg.Service.LogPath))
+	f, err := os.Open(normalizeLogFilePath(p.Cfg.Service.LogPath))
 	if err != nil {
 		return nil, err
 	}

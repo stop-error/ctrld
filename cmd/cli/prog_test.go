@@ -13,7 +13,7 @@ import (
 )
 
 func Test_prog_dnsWatchdogEnabled(t *testing.T) {
-	p := &Prog{cfg: &ctrld.Config{}}
+	p := &Prog{Cfg: &ctrld.Config{}}
 
 	// Default value is true.
 	assert.True(t, p.DnsWatchdogEnabled())
@@ -29,14 +29,14 @@ func Test_prog_dnsWatchdogEnabled(t *testing.T) {
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			p.cfg.Service.DnsWatchdogEnabled = &tc.enabled
+			p.Cfg.Service.DnsWatchdogEnabled = &tc.enabled
 			assert.Equal(t, tc.enabled, p.DnsWatchdogEnabled())
 		})
 	}
 }
 
 func Test_prog_dnsWatchdogInterval(t *testing.T) {
-	p := &Prog{cfg: &ctrld.Config{}}
+	p := &Prog{Cfg: &ctrld.Config{}}
 
 	// Default value is 20s.
 	assert.Equal(t, dnsWatchdogDefaultInterval, p.dnsWatchdogDuration())
@@ -54,7 +54,7 @@ func Test_prog_dnsWatchdogInterval(t *testing.T) {
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			p.cfg.Service.DnsWatchdogInvterval = &tc.duration
+			p.Cfg.Service.DnsWatchdogInvterval = &tc.duration
 			assert.Equal(t, tc.expected, p.dnsWatchdogDuration())
 		})
 	}

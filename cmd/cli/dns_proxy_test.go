@@ -76,11 +76,11 @@ func Test_canonicalName(t *testing.T) {
 func Test_prog_upstreamFor(t *testing.T) {
 	cfg := testhelper.SampleConfig(t)
 	cfg.Service.LeakOnUpstreamFailure = func(v bool) *bool { return &v }(false)
-	p := &Prog{cfg: cfg}
-	p.um = newUpstreamMonitor(p.cfg)
+	p := &Prog{Cfg: cfg}
+	p.um = newUpstreamMonitor(p.Cfg)
 	p.lanLoopGuard = newLoopGuard()
 	p.ptrLoopGuard = newLoopGuard()
-	for _, nc := range p.cfg.Network {
+	for _, nc := range p.Cfg.Network {
 		for _, cidr := range nc.Cidrs {
 			_, ipNet, err := net.ParseCIDR(cidr)
 			if err != nil {
@@ -101,14 +101,14 @@ func Test_prog_upstreamFor(t *testing.T) {
 		matched            bool
 		testLogMsg         string
 	}{
-		{"Policy map matches", "192.168.0.1:0", "", "0", p.cfg.Listener["0"], "abc.xyz", []string{"upstream.1", "upstream.0"}, true, ""},
-		{"Policy split matches", "192.168.0.1:0", "", "0", p.cfg.Listener["0"], "abc.ru", []string{"upstream.1"}, true, ""},
-		{"Policy map for other network matches", "192.168.1.2:0", "", "0", p.cfg.Listener["0"], "abc.xyz", []string{"upstream.0"}, true, ""},
-		{"No policy map for listener", "192.168.1.2:0", "", "1", p.cfg.Listener["1"], "abc.ru", []string{"upstream.1"}, false, ""},
-		{"unenforced loging", "192.168.1.2:0", "", "0", p.cfg.Listener["0"], "abc.ru", []string{"upstream.1"}, true, "My Policy, network.1 (unenforced), *.ru -> [upstream.1]"},
-		{"Policy Macs matches upper", "192.168.0.1:0", "14:45:A0:67:83:0A", "0", p.cfg.Listener["0"], "abc.xyz", []string{"upstream.2"}, true, "14:45:a0:67:83:0a"},
-		{"Policy Macs matches lower", "192.168.0.1:0", "14:54:4a:8e:08:2d", "0", p.cfg.Listener["0"], "abc.xyz", []string{"upstream.2"}, true, "14:54:4a:8e:08:2d"},
-		{"Policy Macs matches case-insensitive", "192.168.0.1:0", "14:54:4A:8E:08:2D", "0", p.cfg.Listener["0"], "abc.xyz", []string{"upstream.2"}, true, "14:54:4a:8e:08:2d"},
+		{"Policy map matches", "192.168.0.1:0", "", "0", p.Cfg.Listener["0"], "abc.xyz", []string{"upstream.1", "upstream.0"}, true, ""},
+		{"Policy split matches", "192.168.0.1:0", "", "0", p.Cfg.Listener["0"], "abc.ru", []string{"upstream.1"}, true, ""},
+		{"Policy map for other network matches", "192.168.1.2:0", "", "0", p.Cfg.Listener["0"], "abc.xyz", []string{"upstream.0"}, true, ""},
+		{"No policy map for listener", "192.168.1.2:0", "", "1", p.Cfg.Listener["1"], "abc.ru", []string{"upstream.1"}, false, ""},
+		{"unenforced loging", "192.168.1.2:0", "", "0", p.Cfg.Listener["0"], "abc.ru", []string{"upstream.1"}, true, "My Policy, network.1 (unenforced), *.ru -> [upstream.1]"},
+		{"Policy Macs matches upper", "192.168.0.1:0", "14:45:A0:67:83:0A", "0", p.Cfg.Listener["0"], "abc.xyz", []string{"upstream.2"}, true, "14:45:a0:67:83:0a"},
+		{"Policy Macs matches lower", "192.168.0.1:0", "14:54:4a:8e:08:2d", "0", p.Cfg.Listener["0"], "abc.xyz", []string{"upstream.2"}, true, "14:54:4a:8e:08:2d"},
+		{"Policy Macs matches case-insensitive", "192.168.0.1:0", "14:54:4A:8E:08:2D", "0", p.Cfg.Listener["0"], "abc.xyz", []string{"upstream.2"}, true, "14:54:4a:8e:08:2d"},
 	}
 
 	for _, tc := range tests {
@@ -144,8 +144,8 @@ func Test_prog_upstreamFor(t *testing.T) {
 
 func TestCache(t *testing.T) {
 	cfg := testhelper.SampleConfig(t)
-	Prog := &Prog{cfg: cfg}
-	for _, nc := range Prog.cfg.Network {
+	Prog := &Prog{Cfg: cfg}
+	for _, nc := range Prog.Cfg.Network {
 		for _, cidr := range nc.Cidrs {
 			_, ipNet, err := net.ParseCIDR(cidr)
 			if err != nil {

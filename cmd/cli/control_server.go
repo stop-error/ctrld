@@ -166,13 +166,13 @@ func (p *Prog) registerControlServerHandler() {
 	p.cs.register(reloadPath, http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		listeners := make(map[string]*ctrld.ListenerConfig)
 		p.mu.Lock()
-		for k, v := range p.cfg.Listener {
+		for k, v := range p.Cfg.Listener {
 			listeners[k] = &ctrld.ListenerConfig{
 				IP:   v.IP,
 				Port: v.Port,
 			}
 		}
-		oldSvc := p.cfg.Service
+		oldSvc := p.Cfg.Service
 		p.mu.Unlock()
 		if err := p.sendReloadSignal(); err != nil {
 			MainLog.Load().Err(err).Msg("could not send reload signal")
@@ -192,7 +192,7 @@ func (p *Prog) registerControlServerHandler() {
 		// Checking for cases that we could not do a reload.
 
 		// 1. Listener config ip or port changes.
-		for k, v := range p.cfg.Listener {
+		for k, v := range p.Cfg.Listener {
 			l := listeners[k]
 			if l == nil || l.IP != v.IP || l.Port != v.Port {
 				w.WriteHeader(http.StatusCreated)
@@ -201,7 +201,7 @@ func (p *Prog) registerControlServerHandler() {
 		}
 
 		// 2. Service config changes.
-		if !reflect.DeepEqual(oldSvc, p.cfg.Service) {
+		if !reflect.DeepEqual(oldSvc, p.Cfg.Service) {
 			w.WriteHeader(http.StatusCreated)
 			return
 		}
