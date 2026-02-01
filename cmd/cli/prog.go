@@ -108,6 +108,7 @@ type Prog struct {
 	DnsWg                sync.WaitGroup
 	dnsWatcherClosedOnce sync.Once
 	dnsWatcherStopCh     chan struct{}
+	MainWatchdogStopCh   chan bool
 	rc                   *controld.ResolverConfig
 
 	Cfg                       *ctrld.Config
@@ -269,6 +270,11 @@ func (p *Prog) runWait() {
 		default:
 		}
 	}
+}
+
+
+func (p *Prog) SetMainWatchdogStopCh(c chan bool) {
+	c = p.MainWatchdogStopCh
 }
 
 func (p *Prog) PreRun() {
@@ -863,7 +869,7 @@ func (p *Prog) DnsWatchdog(iface *net.Interface, nameservers []string) {
 		select {
 		case <-p.dnsWatcherStopCh:
 			return
-		case <-MainWatchdogStopCh:
+		case <-p.MainWatchdogStopCh:
 			return
 		case <-p.stopCh:
 			MainLog.Load().Debug().Msg("stop dns watchdog")
