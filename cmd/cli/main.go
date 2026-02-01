@@ -83,10 +83,10 @@ func NormalizeLogFilePath(logFilePath string) string {
 
 // initConsoleLogging initializes console logging, then storing to MainLog.
 func InitConsoleLogging() {
-	consoleWriter = zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
+	ConsoleWriter = zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
 		w.TimeFormat = time.StampMilli
 	})
-	multi := zerolog.MultiLevelWriter(consoleWriter)
+	multi := zerolog.MultiLevelWriter(ConsoleWriter)
 	l := MainLog.Load().Output(multi).With().Timestamp().Logger()
 	MainLog.Store(&l)
 
@@ -152,7 +152,7 @@ func InitLoggingWithBackup(doBackup bool) []io.Writer {
 		}
 		writers = append(writers, logFile)
 	}
-	writers = append(writers, consoleWriter)
+	writers = append(writers, ConsoleWriter)
 	multi := zerolog.MultiLevelWriter(writers...)
 	l := MainLog.Load().Output(multi).With().Logger()
 	MainLog.Store(&l)
