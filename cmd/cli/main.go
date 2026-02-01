@@ -160,7 +160,7 @@ func InitLoggingWithBackup(doBackup bool) []io.Writer {
 	ctrld.ProxyLogger.Store(&l)
 
 	zerolog.SetGlobalLevel(zerolog.NoticeLevel)
-	logLevel := "info" //TODO: read from config
+	logLevel := "debug" //TODO: read from config
 	switch {
 	case silent:
 		zerolog.SetGlobalLevel(zerolog.NoLevel)
