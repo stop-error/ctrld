@@ -220,7 +220,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 		appCallback:      appCallback,
 	}
 	if homedir == "" {
-		if dir, err := userHomeDir(); err == nil {
+		if dir, err := UserHomeDir(); err == nil {
 			homedir = dir
 		}
 	}
@@ -365,7 +365,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 				MainLog.Load().Warn().Err(err).Msg("could not copy old log file")
 			}
 		}
-		initLoggingWithBackup(false)
+		InitLoggingWithBackup(false)
 	}
 
 	if err := validateConfig(&Cfg); err != nil {
@@ -966,7 +966,7 @@ func selfCheckResolveDomain(ctx context.Context, addr, scope string, domain stri
 	return errSelfCheckNoAnswer
 }
 
-func userHomeDir() (string, error) {
+func UserHomeDir() (string, error) {
 	dir, err := router.HomeDir()
 	if err != nil {
 		return "", err
@@ -1002,11 +1002,11 @@ func userHomeDir() (string, error) {
 func socketDir() (string, error) {
 	switch {
 	case runtime.GOOS == "windows", isMobile():
-		return userHomeDir()
+		return UserHomeDir()
 	}
 	dir := "/var/run"
 	if ok, _ := dirWritable(dir); !ok {
-		return userHomeDir()
+		return UserHomeDir()
 	}
 	return dir, nil
 }
@@ -1049,7 +1049,7 @@ func readConfigWithNotice(writeDefaultConfig, notice bool) {
 		{"ctrld", writeDefaultConfig},
 	}
 
-	dir, err := userHomeDir()
+	dir, err := UserHomeDir()
 	if err != nil {
 		MainLog.Load().Fatal().Msgf("failed to get user home dir: %v", err)
 	}
@@ -1767,7 +1767,7 @@ func absHomeDir(filename string) string {
 	if homedir != "" {
 		return filepath.Join(homedir, filename)
 	}
-	dir, err := userHomeDir()
+	dir, err := UserHomeDir()
 	if err != nil {
 		return filename
 	}

@@ -299,7 +299,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 			// A buffer channel to gather log output from runCmd and report
 			// to user in case self-check process failed.
 			runCmdLogCh := make(chan string, 256)
-			ud, err := userHomeDir()
+			ud, err := UserHomeDir()
 			sockDir := ud
 			if err != nil {
 				MainLog.Load().Warn().Msg("log server did not start")
@@ -969,7 +969,7 @@ NOTE: Uninstalling will set DNS to values provided by DHCP.`,
 				files = append(files, v.ConfigFileUsed())
 				// Log file and backup log file.
 				// For safety, only process if log file path is absolute.
-				if logFile := normalizeLogFilePath(Cfg.Service.LogPath); filepath.IsAbs(logFile) {
+				if logFile := NormalizeLogFilePath(Cfg.Service.LogPath); filepath.IsAbs(logFile) {
 					files = append(files, logFile)
 					oldLogFile := logFile + oldLogSuffix
 					if _, err := os.Stat(oldLogFile); err == nil {

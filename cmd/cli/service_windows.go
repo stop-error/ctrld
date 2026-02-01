@@ -100,7 +100,7 @@ func ConfigureWindowsServiceFailureActions(serviceName string) error {
 	return nil
 }
 
-func openLogFile(path string, mode int) (*os.File, error) {
+func OpenLogFile(path string, mode int) (*os.File, error) {
 	if len(path) == 0 {
 		return nil, &os.PathError{Path: path, Op: "open", Err: syscall.ERROR_FILE_NOT_FOUND}
 	}

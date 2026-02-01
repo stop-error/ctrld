@@ -96,7 +96,7 @@ func (lw *logWriter) Write(p []byte) (int, error) {
 // initLogging initializes global logging setup.
 func (p *Prog) initLogging(backup bool) {
 	zerolog.TimeFieldFormat = time.RFC3339 + ".000"
-	logWriters := initLoggingWithBackup(backup)
+	logWriters := InitLoggingWithBackup(backup)
 
 	// Initializing internal logging after global logging.
 	p.initInternalLogging(logWriters)
@@ -187,7 +187,7 @@ func (p *Prog) logReader() (*logReader, error) {
 	if p.Cfg.Service.LogPath == "" {
 		return &logReader{r: io.NopCloser(strings.NewReader(""))}, nil
 	}
-	f, err := os.Open(normalizeLogFilePath(p.Cfg.Service.LogPath))
+	f, err := os.Open(NormalizeLogFilePath(p.Cfg.Service.LogPath))
 	if err != nil {
 		return nil, err
 	}

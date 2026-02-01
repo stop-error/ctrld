@@ -67,14 +67,14 @@ func Main() {
 	}
 }
 
-func normalizeLogFilePath(logFilePath string) string {
+func NormalizeLogFilePath(logFilePath string) string {
 	if logFilePath == "" || filepath.IsAbs(logFilePath) || service.Interactive() {
 		return logFilePath
 	}
 	if homedir != "" {
 		return filepath.Join(homedir, logFilePath)
 	}
-	dir, _ := userHomeDir()
+	dir, _ := UserHomeDir()
 	if dir == "" {
 		return logFilePath
 	}
@@ -112,7 +112,7 @@ func initInteractiveLogging() {
 	old := Cfg.Service.LogPath
 	Cfg.Service.LogPath = ""
 	zerolog.TimeFieldFormat = time.RFC3339 + ".000"
-	initLoggingWithBackup(false)
+	InitLoggingWithBackup(false)
 	Cfg.Service.LogPath = old
 	l := zerolog.New(io.Discard)
 	ctrld.ProxyLogger.Store(&l)
@@ -124,9 +124,9 @@ func initInteractiveLogging() {
 // This is only used in runCmd for special handling in case of logging config
 // change in cd mode. Without special reason, the caller should use initLogging
 // wrapper instead of calling this function directly.
-func initLoggingWithBackup(doBackup bool) []io.Writer {
+func InitLoggingWithBackup(doBackup bool) []io.Writer {
 	var writers []io.Writer
-	if logFilePath := normalizeLogFilePath(Cfg.Service.LogPath); logFilePath != "" {
+	if logFilePath := NormalizeLogFilePath(Cfg.Service.LogPath); logFilePath != "" {
 		// Create parent directory if necessary.
 		if err := os.MkdirAll(filepath.Dir(logFilePath), 0750); err != nil {
 			MainLog.Load().Error().Msgf("failed to create log path: %v", err)
@@ -144,7 +144,7 @@ func initLoggingWithBackup(doBackup bool) []io.Writer {
 				flags = os.O_CREATE | os.O_RDWR
 			}
 		}
-		logFile, err := openLogFile(logFilePath, flags)
+		logFile, err := OpenLogFile(logFilePath, flags)
 		if err != nil {
 			MainLog.Load().Error().Msgf("failed to create log file: %v", err)
 			os.Exit(1)
