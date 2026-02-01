@@ -11,7 +11,7 @@ import (
 
 func Test_validInterfaces(t *testing.T) {
 	verbose = 3
-	initConsoleLogging()
+	InitConsoleLogging()
 	start := time.Now()
 	ifaces := validInterfaces()
 	t.Logf("Using Windows API takes: %d", time.Since(start).Milliseconds())

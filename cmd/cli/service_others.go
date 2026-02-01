@@ -10,7 +10,7 @@ func hasElevatedPrivilege() (bool, error) {
 	return os.Geteuid() == 0, nil
 }
 
-func openLogFile(path string, flags int) (*os.File, error) {
+func OpenLogFile(path string, flags int) (*os.File, error) {
 	return os.OpenFile(path, flags, os.FileMode(0o600))
 }
 

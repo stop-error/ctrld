@@ -89,7 +89,7 @@ var rootCmd = &cobra.Command{
 	Short:   strings.TrimLeft(rootShortDesc, "\n"),
 	Version: curVersion(),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		initConsoleLogging()
+		InitConsoleLogging()
 	},
 }
 
@@ -174,7 +174,7 @@ func RunMobile(appConfig *AppConfig, appCallback *AppCallback, stopCh chan struc
 	if appConfig == nil {
 		panic("appConfig is nil")
 	}
-	initConsoleLogging()
+	InitConsoleLogging()
 	noConfigStart = false
 	homedir = appConfig.HomeDir
 	verbose = appConfig.Verbose

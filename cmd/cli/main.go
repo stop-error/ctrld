@@ -82,7 +82,7 @@ func NormalizeLogFilePath(logFilePath string) string {
 }
 
 // initConsoleLogging initializes console logging, then storing to MainLog.
-func initConsoleLogging() {
+func InitConsoleLogging() {
 	consoleWriter = zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
 		w.TimeFormat = time.StampMilli
 	})
