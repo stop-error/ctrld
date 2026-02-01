@@ -165,7 +165,7 @@ func (p *Prog) registerControlServerHandler() {
 	}))
 	p.cs.register(reloadPath, http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		listeners := make(map[string]*ctrld.ListenerConfig)
-		p.mu.Lock()
+		p.Mu.Lock()
 		for k, v := range p.Cfg.Listener {
 			listeners[k] = &ctrld.ListenerConfig{
 				IP:   v.IP,
@@ -173,7 +173,7 @@ func (p *Prog) registerControlServerHandler() {
 			}
 		}
 		oldSvc := p.Cfg.Service
-		p.mu.Unlock()
+		p.Mu.Unlock()
 		if err := p.sendReloadSignal(); err != nil {
 			MainLog.Load().Err(err).Msg("could not send reload signal")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -186,8 +186,8 @@ func (p *Prog) registerControlServerHandler() {
 			return
 		}
 
-		p.mu.Lock()
-		defer p.mu.Unlock()
+		p.Mu.Lock()
+		defer p.Mu.Unlock()
 
 		// Checking for cases that we could not do a reload.
 
@@ -211,13 +211,13 @@ func (p *Prog) registerControlServerHandler() {
 	}))
 	p.cs.register(deactivationPath, http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		// Non-cd mode always allowing deactivation.
-		if cdUID == "" {
+		if CdUID == "" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 
 		// Re-fetch pin code from API.
-		if rc, err := controld.FetchResolverConfig(cdUID, rootCmd.Version, cdDev); rc != nil {
+		if rc, err := controld.FetchResolverConfig(CdUID, rootCmd.Version, cdDev); rc != nil {
 			if rc.DeactivationPin != nil {
 				cdDeactivationPin.Store(*rc.DeactivationPin)
 			} else {
@@ -255,9 +255,9 @@ func (p *Prog) registerControlServerHandler() {
 		w.WriteHeader(code)
 	}))
 	p.cs.register(cdPath, http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
-		if cdUID != "" {
+		if CdUID != "" {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(cdUID))
+			w.Write([]byte(CdUID))
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
@@ -302,7 +302,7 @@ func (p *Prog) registerControlServerHandler() {
 		}
 	}))
 	p.cs.register(sendLogsPath, http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
-		if time.Since(p.internalLogSent) < logWriterSentInterval {
+		if time.Since(p.InternalLogSent) < LogWriterSentInterval {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			return
 		}
@@ -316,7 +316,7 @@ func (p *Prog) registerControlServerHandler() {
 			return
 		}
 		req := &controld.LogsRequest{
-			UID:  cdUID,
+			UID:  CdUID,
 			Data: r.r,
 		}
 		MainLog.Load().Debug().Msg("sending log file to ControlD server")
@@ -332,7 +332,7 @@ func (p *Prog) registerControlServerHandler() {
 		if err := json.NewEncoder(w).Encode(&resp); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		p.internalLogSent = time.Now()
+		p.InternalLogSent = time.Now()
 	}))
 }
 

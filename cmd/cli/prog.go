@@ -92,7 +92,7 @@ var svcConfig = &service.Config{
 var useSystemdResolved = false
 
 type Prog struct {
-	mu                   sync.Mutex
+	Mu                   sync.Mutex
 	waitCh               chan struct{}
 	stopCh               chan struct{}
 	pinCodeValidCh       chan struct{}
@@ -125,10 +125,10 @@ type Prog struct {
 	lanLoopGuard              *loopGuard
 	metricsQueryStats         atomic.Bool
 	queryFromSelfMap          sync.Map
-	initInternalLogWriterOnce sync.Once
-	internalLogWriter         *logWriter
-	internalWarnLogWriter     *logWriter
-	internalLogSent           time.Time
+	InitInternalLogWriterOnce sync.Once
+	InternalLogWriter         *LogWriter
+	InternalWarnLogWriter     *LogWriter
+	InternalLogSent           time.Time
 	RunningIface              string
 	RequiredMultiNICsConfig   bool
 	adDomain                  string
@@ -159,9 +159,9 @@ func (p *Prog) Start(s service.Service) error {
 
 // runWait runs ctrld components, waiting for signal to reload.
 func (p *Prog) runWait() {
-	p.mu.Lock()
+	p.Mu.Lock()
 	p.Cfg = &Cfg
-	p.mu.Unlock()
+	p.Mu.Unlock()
 	reloadSigCh := make(chan os.Signal, 1)
 	notifyReloadSigCh(reloadSigCh)
 
@@ -213,24 +213,24 @@ func (p *Prog) runWait() {
 				waitOldRunDone()
 				continue
 			}
-			if cdUID != "" {
+			if CdUID != "" {
 				if rc, err := processCDFlags(newCfg); err != nil {
 					logger.Err(err).Msg("could not fetch ControlD config")
 					waitOldRunDone()
 					continue
 				} else {
-					p.mu.Lock()
+					p.Mu.Lock()
 					p.rc = rc
-					p.mu.Unlock()
+					p.Mu.Unlock()
 				}
 			}
 		}
 
 		waitOldRunDone()
 
-		p.mu.Lock()
+		p.Mu.Lock()
 		curListener := p.Cfg.Listener
-		p.mu.Unlock()
+		p.Mu.Unlock()
 
 		for n, lc := range newCfg.Listener {
 			curLc := curListener[n]
@@ -259,9 +259,9 @@ func (p *Prog) runWait() {
 		MainLog.Load().Debug().Msg("setup upstream with new config")
 		p.setupUpstream(newCfg)
 
-		p.mu.Lock()
+		p.Mu.Lock()
 		*p.Cfg = *newCfg
-		p.mu.Unlock()
+		p.Mu.Unlock()
 
 		logger.Notice().Msg("reloading config successfully")
 
@@ -305,7 +305,7 @@ func (p *Prog) postRun() {
 
 // apiConfigReload calls API to check for latest config update then reload ctrld if necessary.
 func (p *Prog) apiConfigReload() {
-	if cdUID == "" {
+	if CdUID == "" {
 		return
 	}
 
@@ -327,7 +327,7 @@ func (p *Prog) apiConfigReload() {
 	}
 
 	doReloadApiConfig := func(forced bool, logger zerolog.Logger) {
-		resolverConfig, err := controld.FetchResolverConfig(cdUID, rootCmd.Version, cdDev)
+		resolverConfig, err := controld.FetchResolverConfig(CdUID, rootCmd.Version, cdDev)
 		selfUninstallCheck(err, p, logger)
 		if err != nil {
 			logger.Warn().Err(err).Msg("could not fetch resolver config")
@@ -353,10 +353,10 @@ func (p *Prog) apiConfigReload() {
 			cdDeactivationPin.Store(defaultDeactivationPin)
 		}
 
-		p.mu.Lock()
+		p.Mu.Lock()
 		rc := p.rc
 		p.rc = resolverConfig
-		p.mu.Unlock()
+		p.Mu.Unlock()
 		noCustomConfig := resolverConfig.Ctrld.CustomConfig == ""
 		noExcludeListChanged := true
 		if rc != nil {
@@ -385,7 +385,7 @@ func (p *Prog) apiConfigReload() {
 			}
 			if cfgErr != nil {
 				logger.Warn().Err(err).Msg("skipping invalid custom config")
-				if _, err := controld.UpdateCustomLastFailed(cdUID, rootCmd.Version, cdDev, true); err != nil {
+				if _, err := controld.UpdateCustomLastFailed(CdUID, rootCmd.Version, cdDev, true); err != nil {
 					logger.Error().Err(err).Msg("could not mark custom last update failed")
 				}
 				return
@@ -606,7 +606,7 @@ func (p *Prog) run(reload bool, reloadCh chan struct{}) {
 	if !reload {
 		// Stop writing log to unix socket.
 		consoleWriter.Out = os.Stdout
-		p.initLogging(false)
+		p.InitLogging(false)
 		if p.logConn != nil {
 			_ = p.logConn.Close()
 		}
@@ -618,7 +618,7 @@ func (p *Prog) run(reload bool, reloadCh chan struct{}) {
 
 // setupClientInfoDiscover performs necessary works for running client info discover.
 func (p *Prog) setupClientInfoDiscover(selfIP string) {
-	p.ciTable = clientinfo.NewTable(&Cfg, selfIP, cdUID, p.ptrNameservers)
+	p.ciTable = clientinfo.NewTable(&Cfg, selfIP, CdUID, p.ptrNameservers)
 	if leaseFile := p.Cfg.Service.DHCPLeaseFile; leaseFile != "" {
 		MainLog.Load().Debug().Msgf("watching custom lease file: %s", leaseFile)
 		format := ctrld.LeaseFileFormat(p.Cfg.Service.DHCPLeaseFileFormat)
@@ -694,8 +694,8 @@ func (p *Prog) stopDnsWatchers() {
 }
 
 func (p *Prog) allocateIP(ip string) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	p.Mu.Lock()
+	defer p.Mu.Unlock()
 	if !p.Cfg.Service.AllocateIP {
 		return nil
 	}
@@ -703,8 +703,8 @@ func (p *Prog) allocateIP(ip string) error {
 }
 
 func (p *Prog) deAllocateIP() error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	p.Mu.Lock()
+	defer p.Mu.Unlock()
 	if !p.Cfg.Service.AllocateIP {
 		return nil
 	}
@@ -870,6 +870,7 @@ func (p *Prog) DnsWatchdog(iface *net.Interface, nameservers []string) {
 		case <-p.dnsWatcherStopCh:
 			return
 		case <-p.MainWatchdogStopCh:
+			MainLog.Load().Info().Msgf("watchdog: recieved stop signal")
 			return
 		case <-p.stopCh:
 			MainLog.Load().Debug().Msg("stop dns watchdog")

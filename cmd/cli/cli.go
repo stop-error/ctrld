@@ -113,7 +113,7 @@ func initCLI() {
 	cobra.EnableCommandSorting = false
 
 	rootCmd.PersistentFlags().CountVarP(
-		&verbose,
+		&Verbose,
 		"verbose",
 		"v",
 		`verbose log output, "-v" basic logging, "-vv" debug logging`,
@@ -177,7 +177,7 @@ func RunMobile(appConfig *AppConfig, appCallback *AppCallback, stopCh chan struc
 	InitConsoleLogging()
 	noConfigStart = false
 	homedir = appConfig.HomeDir
-	verbose = appConfig.Verbose
+	Verbose = appConfig.Verbose
 	if appConfig.ProvisionID != "" {
 		cdOrg = appConfig.ProvisionID
 	}
@@ -185,7 +185,7 @@ func RunMobile(appConfig *AppConfig, appCallback *AppCallback, stopCh chan struc
 		customHostname = appConfig.CustomHostname
 	}
 	if appConfig.CdUID != "" {
-		cdUID = appConfig.CdUID
+		CdUID = appConfig.CdUID
 	}
 	cdUpstreamProto = appConfig.UpstreamProto
 	logPath = appConfig.LogPath
@@ -275,18 +275,18 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 
 	// After s.Run() was called, if ctrld is going to be terminated for any reason,
 	// write msgExit to p.logConn so others (like "ctrld start") won't have to wait for timeout.
-	p.mu.Lock()
+	p.Mu.Lock()
 	if err := v.Unmarshal(&Cfg); err != nil {
 		notifyExitToLogServer()
 		MainLog.Load().Fatal().Msgf("failed to unmarshal config: %v", err)
 	}
-	p.mu.Unlock()
+	p.Mu.Unlock()
 
 	processLogAndCacheFlags()
 
 	// Log config do not have thing to validate, so it's safe to init log here,
 	// so it's able to log information in processCDFlags.
-	p.initLogging(true)
+	p.InitLogging(true)
 
 	MainLog.Load().Info().Msgf("starting ctrld %s", curVersion())
 	MainLog.Load().Info().Msgf("os: %s", osVersion())
@@ -297,7 +297,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 		MainLog.Load().Fatal().Msg("network is not up yet")
 	}
 
-	p.router = router.New(&Cfg, cdUID != "")
+	p.router = router.New(&Cfg, CdUID != "")
 	cs, err := newControlServer(filepath.Join(sockDir, ControlSocketName()))
 	if err != nil {
 		MainLog.Load().Warn().Err(err).Msg("could not create control server")
@@ -314,9 +314,9 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 
 	oldLogPath := Cfg.Service.LogPath
 	if uid := cdUIDFromProvToken(); uid != "" {
-		cdUID = uid
+		CdUID = uid
 	}
-	if cdUID != "" {
+	if CdUID != "" {
 		validateCdUpstreamProtocol()
 		if rc, err := processCDFlags(&Cfg); err != nil {
 			if isMobile() {
@@ -333,15 +333,15 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 			notifyExitToLogServer()
 			cdLogger.Fatal().Err(err).Msg("failed to fetch resolver config")
 		} else {
-			p.mu.Lock()
+			p.Mu.Lock()
 			p.rc = rc
-			p.mu.Unlock()
+			p.Mu.Unlock()
 		}
 	}
 
 	updated := updateListenerConfig(&Cfg, notifyExitToLogServer)
 
-	if cdUID != "" {
+	if CdUID != "" {
 		processLogAndCacheFlags()
 	}
 
@@ -470,7 +470,7 @@ func writeConfigFile(cfg *ctrld.Config) error {
 		return err
 	}
 	defer f.Close()
-	if cdUID != "" {
+	if CdUID != "" {
 		if _, err := f.WriteString("# AUTO-GENERATED VIA CD FLAG - DO NOT MODIFY\n\n"); err != nil {
 			return err
 		}
@@ -520,7 +520,7 @@ func readConfigFile(writeDefaultConfig, notice bool) bool {
 			if err != nil {
 				MainLog.Load().Fatal().Msgf("failed to get default config file path: %v", err)
 			}
-			if cdUID == "" && nextdns == "" {
+			if CdUID == "" && nextdns == "" {
 				MainLog.Load().Notice().Msg("Generating controld default config: " + fp)
 			}
 			MainLog.Load().Info().Msg("writing default config file to: " + fp)
@@ -639,16 +639,16 @@ func deactivationPinSet() bool {
 
 func processCDFlags(cfg *ctrld.Config) (*controld.ResolverConfig, error) {
 	logger := MainLog.Load().With().Str("mode", "cd").Logger()
-	logger.Info().Msgf("fetching Controld D configuration from API: %s", cdUID)
+	logger.Info().Msgf("fetching Controld D configuration from API: %s", CdUID)
 	bo := backoff.NewBackoff("processCDFlags", logf, 30*time.Second)
 	bo.LogLongerThan = 30 * time.Second
 	ctx := context.Background()
-	resolverConfig, err := controld.FetchResolverConfig(cdUID, rootCmd.Version, cdDev)
+	resolverConfig, err := controld.FetchResolverConfig(CdUID, rootCmd.Version, cdDev)
 	for {
 		if errUrlNetworkError(err) {
 			bo.BackOff(ctx, err)
 			logger.Warn().Msg("could not fetch resolver using bootstrap DNS, retrying...")
-			resolverConfig, err = controld.FetchResolverConfig(cdUID, rootCmd.Version, cdDev)
+			resolverConfig, err = controld.FetchResolverConfig(CdUID, rootCmd.Version, cdDev)
 			continue
 		}
 		break
@@ -1219,7 +1219,7 @@ func updateListenerConfig(cfg *ctrld.Config, notifyToLogServerFunc func()) bool 
 func tryUpdateListenerConfig(cfg *ctrld.Config, infoLogger *zerolog.Logger, notifyFunc func(), fatal bool) (updated, ok bool) {
 	ok = true
 	lcc := make(map[string]*listenerConfigCheck)
-	cdMode := cdUID != ""
+	cdMode := CdUID != ""
 	nextdnsMode := nextdns != ""
 	// For Windows server with local Dns server running, we can only try on random local IP.
 	hasLocalDnsServer := hasLocalDnsServerRunning()
@@ -1504,7 +1504,7 @@ func osVersion() string {
 // cdUIDFromProvToken fetch UID from ControlD API using provision token.
 func cdUIDFromProvToken() string {
 	// --cd flag supersedes --cd-org, ignore it if both are supplied.
-	if cdUID != "" {
+	if CdUID != "" {
 		return ""
 	}
 	// --cd-org is empty, nothing to do.
@@ -1632,7 +1632,7 @@ func checkStrFlagEmpty(cmd *cobra.Command, flagName string) {
 }
 
 func validateCdUpstreamProtocol() {
-	if cdUID == "" {
+	if CdUID == "" {
 		return
 	}
 	switch cdUpstreamProto {
@@ -1643,7 +1643,7 @@ func validateCdUpstreamProtocol() {
 }
 
 func validateCdAndNextDNSFlags() {
-	if (cdUID != "" || cdOrg != "") && nextdns != "" {
+	if (CdUID != "" || cdOrg != "") && nextdns != "" {
 		MainLog.Load().Fatal().Msgf("--%s/--%s could not be used with --%s", cdUidFlagName, cdOrgFlagName, nextdnsFlagName)
 	}
 }
@@ -1683,7 +1683,7 @@ func doGenerateNextDNSConfig(uid string) error {
 }
 
 func noticeWritingControlDConfig() error {
-	if cdUID != "" {
+	if CdUID != "" {
 		MainLog.Load().Notice().Msgf("Generating controld config: %s", defaultConfigFile)
 	}
 	return nil

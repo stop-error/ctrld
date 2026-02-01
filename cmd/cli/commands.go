@@ -179,7 +179,7 @@ func initRunCmd() *cobra.Command {
 	runCmd.Flags().StringSliceVarP(&domains, "domains", "", nil, "List of domain to apply in a split DNS policy")
 	runCmd.Flags().StringVarP(&logPath, "log", "", "", "Path to log file")
 	runCmd.Flags().IntVarP(&cacheSize, "cache_size", "", 0, "Enable cache with size items")
-	runCmd.Flags().StringVarP(&cdUID, cdUidFlagName, "", "", "Control D resolver uid")
+	runCmd.Flags().StringVarP(&CdUID, cdUidFlagName, "", "", "Control D resolver uid")
 	runCmd.Flags().StringVarP(&cdOrg, cdOrgFlagName, "", "", "Control D provision token")
 	runCmd.Flags().StringVarP(&customHostname, customHostnameFlagName, "", "", "Custom hostname passed to ControlD API")
 	runCmd.Flags().BoolVarP(&cdDev, "dev", "", false, "Use Control D dev resolver/domain")
@@ -230,7 +230,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 			sc.Arguments = append([]string{"run"}, osArgs...)
 
 			p := &Prog{
-				router: router.New(&Cfg, cdUID != ""),
+				router: router.New(&Cfg, CdUID != ""),
 				Cfg:    &Cfg,
 			}
 			s, err := newService(p, sc)
@@ -391,16 +391,16 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 				return
 			}
 
-			if cdUID != "" {
-				_ = doValidateCdRemoteConfig(cdUID, true)
+			if CdUID != "" {
+				_ = doValidateCdRemoteConfig(CdUID, true)
 			} else if uid := cdUIDFromProvToken(); uid != "" {
-				cdUID = uid
+				CdUID = uid
 				MainLog.Load().Debug().Msg("using uid from provision token")
 				removeOrgFlagsFromArgs(sc)
 				// Pass --cd flag to "ctrld run" command, so the provision token takes no effect.
-				sc.Arguments = append(sc.Arguments, "--cd="+cdUID)
+				sc.Arguments = append(sc.Arguments, "--cd="+CdUID)
 			}
-			if cdUID != "" {
+			if CdUID != "" {
 				validateCdUpstreamProtocol()
 			}
 
@@ -521,7 +521,7 @@ NOTE: running "ctrld start" without any arguments will start already installed c
 	startCmd.Flags().StringSliceVarP(&domains, "domains", "", nil, "List of domain to apply in a split DNS policy")
 	startCmd.Flags().StringVarP(&logPath, "log", "", "", "Path to log file")
 	startCmd.Flags().IntVarP(&cacheSize, "cache_size", "", 0, "Enable cache with size items")
-	startCmd.Flags().StringVarP(&cdUID, cdUidFlagName, "", "", "Control D resolver uid")
+	startCmd.Flags().StringVarP(&CdUID, cdUidFlagName, "", "", "Control D resolver uid")
 	startCmd.Flags().StringVarP(&cdOrg, cdOrgFlagName, "", "", "Control D provision token")
 	startCmd.Flags().StringVarP(&customHostname, customHostnameFlagName, "", "", "Custom hostname passed to ControlD API")
 	startCmd.Flags().BoolVarP(&cdDev, "dev", "", false, "Use Control D dev resolver/domain")
@@ -692,8 +692,8 @@ func initRestartCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			readConfig(false)
 			v.Unmarshal(&Cfg)
-			cdUID = curCdUID()
-			cdMode := cdUID != ""
+			CdUID = curCdUID()
+			cdMode := CdUID != ""
 
 			p := &Prog{router: router.New(&Cfg, cdMode)}
 			s, err := newService(p, svcConfig)
@@ -718,7 +718,7 @@ func initRestartCmd() *cobra.Command {
 
 			var validateConfigErr error
 			if cdMode {
-				validateConfigErr = doValidateCdRemoteConfig(cdUID, false)
+				validateConfigErr = doValidateCdRemoteConfig(CdUID, false)
 			}
 
 			if ir := runningIface(s); ir != nil {

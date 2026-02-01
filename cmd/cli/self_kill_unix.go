@@ -32,14 +32,14 @@ func selfUninstall(p *Prog, logger zerolog.Logger) {
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	logger.Warn().Msgf("service was uninstalled because device %q does not exist", cdUID)
+	logger.Warn().Msgf("service was uninstalled because device %q does not exist", CdUID)
 	_ = cmd.Wait()
 	os.Exit(0)
 }
 
 func selfUninstallLinux(p *Prog, logger zerolog.Logger) {
 	if uninstallInvalidCdUID(p, logger, true) {
-		logger.Warn().Msgf("service was uninstalled because device %q does not exist", cdUID)
+		logger.Warn().Msgf("service was uninstalled because device %q does not exist", CdUID)
 		os.Exit(0)
 	}
 }

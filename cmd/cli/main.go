@@ -25,9 +25,9 @@ var (
 	homedir           string
 	cacheSize         int
 	Cfg               ctrld.Config
-	verbose           int
+	Verbose           int
 	silent            bool
-	cdUID             string
+	CdUID             string
 	cdOrg             string
 	customHostname    string
 	cdDev             bool
@@ -93,10 +93,10 @@ func InitConsoleLogging() {
 	switch {
 	case silent:
 		zerolog.SetGlobalLevel(zerolog.NoLevel)
-	case verbose == 1:
+	case Verbose == 1:
 		ctrld.ProxyLogger.Store(&l)
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	case verbose > 1:
+	case Verbose > 1:
 		ctrld.ProxyLogger.Store(&l)
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	default:
@@ -165,9 +165,9 @@ func InitLoggingWithBackup(doBackup bool) []io.Writer {
 	case silent:
 		zerolog.SetGlobalLevel(zerolog.NoLevel)
 		return writers
-	case verbose == 1:
+	case Verbose == 1:
 		logLevel = "info"
-	case verbose > 1:
+	case Verbose > 1:
 		logLevel = "debug"
 	}
 	if logLevel == "" {

@@ -10,7 +10,7 @@ import (
 
 func selfUninstall(p *Prog, logger zerolog.Logger) {
 	if uninstallInvalidCdUID(p, logger, false) {
-		logger.Warn().Msgf("service was uninstalled because device %q does not exist", cdUID)
+		logger.Warn().Msgf("service was uninstalled because device %q does not exist", CdUID)
 		os.Exit(0)
 	}
 }

@@ -954,7 +954,7 @@ func (p *Prog) doSelfUninstall(answer *dns.Msg) {
 	logger := MainLog.Load().With().Str("mode", "self-uninstall").Logger()
 	if p.refusedQueryCount > selfUninstallMaxQueries {
 		p.checkingSelfUninstall = true
-		_, err := controld.FetchResolverConfig(cdUID, rootCmd.Version, cdDev)
+		_, err := controld.FetchResolverConfig(CdUID, rootCmd.Version, cdDev)
 		logger.Debug().Msg("maximum number of refused queries reached, checking device status")
 		selfUninstallCheck(err, p, logger)
 
@@ -983,11 +983,11 @@ func (p *Prog) selfUninstallCoolOfPeriod() {
 // forceFetchingAPI sends signal to force syncing API config if run in cd mode,
 // and the domain == "cdUID.verify.controld.com"
 func (p *Prog) forceFetchingAPI(domain string) {
-	if cdUID == "" {
+	if CdUID == "" {
 		return
 	}
 	resolverID, parent, _ := strings.Cut(domain, ".")
-	if resolverID != cdUID {
+	if resolverID != CdUID {
 		return
 	}
 	switch {

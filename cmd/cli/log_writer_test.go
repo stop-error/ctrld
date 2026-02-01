@@ -8,7 +8,7 @@ import (
 
 func Test_logWriter_Write(t *testing.T) {
 	size := 64 * 1024
-	lw := &logWriter{size: size}
+	lw := &LogWriter{size: size}
 	lw.buf.Grow(lw.size)
 	data := strings.Repeat("A", size)
 	lw.Write([]byte(data))
@@ -32,7 +32,7 @@ func Test_logWriter_Write(t *testing.T) {
 
 func Test_logWriter_ConcurrentWrite(t *testing.T) {
 	size := 64 * 1024
-	lw := &logWriter{size: size}
+	lw := &LogWriter{size: size}
 	n := 10
 	var wg sync.WaitGroup
 	wg.Add(n)
@@ -50,7 +50,7 @@ func Test_logWriter_ConcurrentWrite(t *testing.T) {
 
 func Test_logWriter_MarkerInitEnd(t *testing.T) {
 	size := 64 * 1024
-	lw := &logWriter{size: size}
+	lw := &LogWriter{size: size}
 	lw.buf.Grow(lw.size)
 
 	paddingSize := 10

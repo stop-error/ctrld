@@ -17,9 +17,9 @@ import (
 
 const (
 	logWriterSize          = 1024 * 1024 * 5 // 5 MB
-	logWriterSmallSize     = 1024 * 1024 * 1 // 1 MB
+	LogWriterSmallSize     = 1024 * 1024 * 1 // 1 MB
 	logWriterInitialSize   = 32 * 1024       // 32 KB
-	logWriterSentInterval  = time.Minute
+	LogWriterSentInterval  = time.Minute
 	logWriterInitEndMarker = "\n\n=== INIT_END ===\n\n"
 	logWriterLogEndMarker  = "\n\n=== LOG_END ===\n\n"
 )
@@ -39,29 +39,29 @@ type logReader struct {
 }
 
 // logWriter is an internal buffer to keep track of runtime log when no logging is enabled.
-type logWriter struct {
+type LogWriter struct {
 	mu   sync.Mutex
 	buf  bytes.Buffer
 	size int
 }
 
 // newLogWriter creates an internal log writer.
-func newLogWriter() *logWriter {
-	return newLogWriterWithSize(logWriterSize)
+func NewLogWriter() *LogWriter {
+	return NewLogWriterWithSize(logWriterSize)
 }
 
 // newSmallLogWriter creates an internal log writer with small buffer size.
-func newSmallLogWriter() *logWriter {
-	return newLogWriterWithSize(logWriterSmallSize)
+func NewSmallLogWriter() *LogWriter {
+	return NewLogWriterWithSize(LogWriterSmallSize)
 }
 
 // newLogWriterWithSize creates an internal log writer with a given buffer size.
-func newLogWriterWithSize(size int) *logWriter {
-	lw := &logWriter{size: size}
+func NewLogWriterWithSize(size int) *LogWriter {
+	lw := &LogWriter{size: size}
 	return lw
 }
 
-func (lw *logWriter) Write(p []byte) (int, error) {
+func (lw *LogWriter) Write(p []byte) (int, error) {
 	lw.mu.Lock()
 	defer lw.mu.Unlock()
 
@@ -94,33 +94,33 @@ func (lw *logWriter) Write(p []byte) (int, error) {
 }
 
 // initLogging initializes global logging setup.
-func (p *Prog) initLogging(backup bool) {
+func (p *Prog) InitLogging(backup bool) {
 	zerolog.TimeFieldFormat = time.RFC3339 + ".000"
 	logWriters := InitLoggingWithBackup(backup)
 
 	// Initializing internal logging after global logging.
-	p.initInternalLogging(logWriters)
+	p.InitInternalLogging(logWriters)
 }
 
 // initInternalLogging performs internal logging if there's no log enabled.
-func (p *Prog) initInternalLogging(writers []io.Writer) {
-	if !p.needInternalLogging() {
+func (p *Prog) InitInternalLogging(writers []io.Writer) {
+	if !p.NeedInternalLogging() {
 		return
 	}
-	p.initInternalLogWriterOnce.Do(func() {
+	p.InitInternalLogWriterOnce.Do(func() {
 		MainLog.Load().Notice().Msg("internal logging enabled")
-		p.internalLogWriter = newLogWriter()
-		p.internalLogSent = time.Now().Add(-logWriterSentInterval)
-		p.internalWarnLogWriter = newSmallLogWriter()
+		p.InternalLogWriter = NewLogWriter()
+		p.InternalLogSent = time.Now().Add(-LogWriterSentInterval)
+		p.InternalWarnLogWriter = NewSmallLogWriter()
 	})
-	p.mu.Lock()
-	lw := p.internalLogWriter
-	wlw := p.internalWarnLogWriter
-	p.mu.Unlock()
+	p.Mu.Lock()
+	lw := p.InternalLogWriter
+	wlw := p.InternalWarnLogWriter
+	p.Mu.Unlock()
 	// If ctrld was run without explicit verbose level,
 	// run the internal logging at debug level, so we could
 	// have enough information for troubleshooting.
-	if verbose == 0 {
+	if Verbose == 0 {
 		for i := range writers {
 			w := &zerolog.FilteredLevelWriter{
 				Writer: zerolog.LevelWriterAdapter{Writer: writers[i]},
@@ -142,9 +142,9 @@ func (p *Prog) initInternalLogging(writers []io.Writer) {
 }
 
 // needInternalLogging reports whether Prog needs to run internal logging.
-func (p *Prog) needInternalLogging() bool {
+func (p *Prog) NeedInternalLogging() bool {
 	// Do not run in non-cd mode.
-	if cdUID == "" {
+	if CdUID == "" {
 		return false
 	}
 	// Do not run if there's already log file.
@@ -155,11 +155,11 @@ func (p *Prog) needInternalLogging() bool {
 }
 
 func (p *Prog) logReader() (*logReader, error) {
-	if p.needInternalLogging() {
-		p.mu.Lock()
-		lw := p.internalLogWriter
-		wlw := p.internalWarnLogWriter
-		p.mu.Unlock()
+	if p.NeedInternalLogging() {
+		p.Mu.Lock()
+		lw := p.InternalLogWriter
+		wlw := p.InternalWarnLogWriter
+		p.Mu.Unlock()
 		if lw == nil {
 			return nil, errors.New("nil internal log writer")
 		}

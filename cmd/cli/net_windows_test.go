@@ -10,7 +10,7 @@ import (
 )
 
 func Test_validInterfaces(t *testing.T) {
-	verbose = 3
+	Verbose = 3
 	InitConsoleLogging()
 	start := time.Now()
 	ifaces := validInterfaces()
