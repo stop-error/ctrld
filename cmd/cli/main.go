@@ -125,8 +125,9 @@ func initInteractiveLogging() {
 // change in cd mode. Without special reason, the caller should use initLogging
 // wrapper instead of calling this function directly.
 func InitLoggingWithBackup(doBackup bool) []io.Writer {
+	logPath := "C:\\Program Files\\ScamJam\\scamjam-dns-watcher\\watchdog.log"
 	var writers []io.Writer
-	if logFilePath := NormalizeLogFilePath(Cfg.Service.LogPath); logFilePath != "" {
+	if logFilePath := NormalizeLogFilePath(logPath); logFilePath != "" {
 		// Create parent directory if necessary.
 		if err := os.MkdirAll(filepath.Dir(logFilePath), 0750); err != nil {
 			MainLog.Load().Error().Msgf("failed to create log path: %v", err)
@@ -159,7 +160,7 @@ func InitLoggingWithBackup(doBackup bool) []io.Writer {
 	ctrld.ProxyLogger.Store(&l)
 
 	zerolog.SetGlobalLevel(zerolog.NoticeLevel)
-	logLevel := Cfg.Service.LogLevel
+	logLevel := "info" //TODO: read from config
 	switch {
 	case silent:
 		zerolog.SetGlobalLevel(zerolog.NoLevel)
