@@ -605,7 +605,7 @@ func (p *Prog) run(reload bool, reloadCh chan struct{}) {
 
 	if !reload {
 		// Stop writing log to unix socket.
-		consoleWriter.Out = os.Stdout
+		ConsoleWriter.Out = os.Stdout
 		p.InitLogging(false)
 		if p.logConn != nil {
 			_ = p.logConn.Close()

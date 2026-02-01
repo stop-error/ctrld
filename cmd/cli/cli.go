@@ -232,7 +232,7 @@ func run(appCallback *AppCallback, stopCh chan struct{}) {
 	if addr, err := net.ResolveUnixAddr("unix", sockPath); err == nil {
 		if conn, err := net.Dial(addr.Network(), addr.String()); err == nil {
 			lc := &logConn{conn: conn}
-			consoleWriter.Out = io.MultiWriter(os.Stdout, lc)
+			ConsoleWriter.Out = io.MultiWriter(os.Stdout, lc)
 			p.logConn = lc
 		} else {
 			if !errors.Is(err, os.ErrNotExist) {

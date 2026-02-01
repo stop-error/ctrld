@@ -42,7 +42,7 @@ var (
 	rfc1918           bool
 
 	MainLog       atomic.Pointer[zerolog.Logger]
-	consoleWriter zerolog.ConsoleWriter
+	ConsoleWriter zerolog.ConsoleWriter
 	noConfigStart bool
 )
 
