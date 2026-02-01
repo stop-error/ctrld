@@ -274,7 +274,7 @@ func (p *Prog) runWait() {
 
 
 func (p *Prog) SetMainWatchdogStopCh(c chan bool) {
-	c = p.MainWatchdogStopCh
+	p.MainWatchdogStopCh = c
 }
 
 func (p *Prog) PreRun() {
