@@ -857,11 +857,13 @@ func (p *Prog) DnsWatchdog(iface *net.Interface, nameservers []string) {
 
 	ns := nameservers
 	slices.Sort(ns)
-	ticker := time.NewTicker(20 * time.Second)
+	ticker := time.NewTicker(20 * time.Second) //change to defaultInterval?
 
 	for {
 		select {
 		case <-p.dnsWatcherStopCh:
+			return
+		case <-MainWatchdogStopCh:
 			return
 		case <-p.stopCh:
 			MainLog.Load().Debug().Msg("stop dns watchdog")
